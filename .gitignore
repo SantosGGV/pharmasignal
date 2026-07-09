@@ -1,0 +1,19 @@
+# Datos FAERS — nunca subir al repo (volumen excesivo)
+data/raw/
+data/curated/
+
+# Entorno virtual Python
+.venv/
+
+# Ficheros temporales de Spark
+derby.log
+metastore_db/
+spark-warehouse/
+
+# PyCharm
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
