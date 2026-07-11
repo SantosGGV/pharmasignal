@@ -71,6 +71,67 @@ demo_edad = demo_dedup.withColumn(
     .otherwise(None)
 )
 
+# Regla 3. Filtro de edades fuera de rango 0-120 años
+con_edad = demo_edad.filter(col("age_years").isNotNull())
+edad_valida = demo_edad.filter(
+    col("age_years").isNotNull() &
+    (col("age_years") >= 0) &
+    (col("age_years") <= 120)
+)
+sin_edad = demo_edad.filter(col("age_years").isNull()).count()
+fuera_rango = con_edad.count() - edad_valida.count()
+
+print(f"\nCalidad de edad:")
+print(f"  Sin edad informada: {sin_edad:,}")
+print(f"  Con edad fuera de rango (0-120): {fuera_rango:,} — marcados como nulos")
+
+# Los registros fuera de rango se mantienen pero con age_years = null
+demo_edad_limpia = demo_edad.withColumn(
+    "age_years",
+    when(
+        (col("age_years") >= 0) & (col("age_years") <= 120),
+        col("age_years")
+    ).otherwise(None)
+)
+
+# Regla 4. Normalización de campos de texto
+# reporter_country y sex se normalizan para evitar variantes.
+demo_texto = demo_edad_limpia \
+    .withColumn("reporter_country", upper(trim(col("reporter_country")))) \
+    .withColumn("occr_country", upper(trim(col("occr_country")))) \
+    .withColumn("sex", upper(trim(col("sex"))))
+
+# Regla 5. Conversión de fechas
+# Los campos de fecha vienen como string tipo "20200110".
+# Convertimos a tipo fecha real con formato yyyyMMdd.
+demo_fechas = demo_texto \
+    .withColumn("fda_dt_parsed",
+        to_date(col("fda_dt").cast("string"), "yyyyMMdd")) \
+    .withColumn("event_dt_parsed",
+        to_date(
+            regexp_replace(col("event_dt").cast("string"), ",.*", ""),
+            "yyyyMMdd"
+        )
+    )
+
+total_final = demo_fechas.count()
+print(f"\nRegistros finales DEMO curado: {total_final:,}")
+print(f"Reducción total respecto al original: {total_inicial - total_final:,} registros")
+
+# Guardamos DEMO curado en Delta Lake sobreescribiendo la versión anterior
+ruta_salida = f"{CURATED_PATH}/demo_curado"
+demo_fechas.write \
+    .format("delta") \
+    .mode("overwrite") \
+    .option("overwriteSchema", "true") \
+    .save(ruta_salida)
+
+print(f"\nDEMO curado guardado en: {ruta_salida}")
+print("\n=== SCHEMA DEMO CURADO ===")
+demo_fechas.printSchema()
+
+spark.stop()
+
 
 
 
