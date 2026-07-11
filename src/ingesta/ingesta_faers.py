@@ -14,9 +14,6 @@ Las 7 tablas de FAERS son:
 - THER: información de la terapia (dosis, fechas)
 - RPSR: fuente de la notificación
 
-Todas las tablas se unen posteriormente por el campo ISR (primaryid),
-que actúa como identificador único de cada notificación.
-
 """
 
 from pyspark.sql import SparkSession
@@ -53,9 +50,47 @@ def ingestar_tabla(nombre_tabla, patron_fichero):
     añade una columna 'trimestre' para trazabilidad temporal
     y devolverá un DataFrame consolidado.
     """
+    ficheros = sorted(glob.glob(
+        f"{RAW_PATH}/faers_ascii_*/ASCII/{patron_fichero}"
+    ))
 
+    print(f"\n{'='*50}")
+    print(f"INGESTA: {nombre_tabla.upper()} — {len(ficheros)} trimestres")
+    print(f"{'='*50}")
 
+    if not ficheros:
+        print(f"  ERROR: no se encontraron ficheros para {nombre_tabla}")
+        return None
 
+    dfs = []
+    total_filas = 0
+
+    for fichero in ficheros:
+        # Extraemos el identificador del trimestre del nombre de la carpeta
+        trimestre = fichero.split("/")[-3].replace("faers_ascii_", "")
+
+        df = spark.read \
+            .option("header", "true") \
+            .option("sep", "$") \
+            .option("inferSchema", "true") \
+            .csv(fichero)
+
+        # Añadimos columna trimestre para poder filtrar temporalmente después
+        df = df.withColumn("trimestre", lit(trimestre))
+        filas = df.count()
+        total_filas += filas
+        dfs.append(df)
+        print(f"  {trimestre}: {filas:,} filas")
+
+    # Consolidamos todos los trimestres en un único DataFrame
+    # unionByName permite que las tablas con columnas distintas entre trimestres
+    # se unan correctamente rellenando con null las columnas que falten
+    consolidado = dfs[0]
+    for df in dfs[1:]:
+        consolidado = consolidado.unionByName(df, allowMissingColumns=True)
+
+    print(f"\n  Total {nombre_tabla.upper()}: {total_filas:,} filas")
+    return consolidado
 
 
 
