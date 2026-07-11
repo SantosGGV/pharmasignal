@@ -18,15 +18,19 @@ Las 7 tablas de FAERS son:
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import lit
+from delta import configure_spark_with_delta_pip
 import os
 import glob
 
-spark = SparkSession.builder \
+builder = SparkSession.builder \
     .appName("PharmaSignal-Ingesta") \
     .master("local[*]") \
     .config("spark.driver.memory", "16g") \
     .config("spark.executor.memory", "8g") \
-    .getOrCreate()
+    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+
+spark = configure_spark_with_delta_pip(builder).getOrCreate()
 
 spark.sparkContext.setLogLevel("ERROR")
 
@@ -72,7 +76,6 @@ def ingestar_tabla(nombre_tabla, patron_fichero):
         df = spark.read \
             .option("header", "true") \
             .option("sep", "$") \
-            .option("inferSchema", "true") \
             .csv(fichero)
 
         # Añadimos columna trimestre para poder filtrar temporalmente después
@@ -91,6 +94,55 @@ def ingestar_tabla(nombre_tabla, patron_fichero):
 
     print(f"\n  Total {nombre_tabla.upper()}: {total_filas:,} filas")
     return consolidado
+
+def guardar_tabla(df, nombre_tabla):
+    """
+    Persistirá el DataFrame consolidado en formato Delta Lake.
+    El modo 'overwrite' nos permite reejecutar el pipeline
+    desde cero obteniendo siempre los mismos resultados
+    """
+    ruta = f"{CURATED_PATH}/{nombre_tabla}"
+    df.write \
+        .format("delta") \
+        .mode("overwrite") \
+        .option("overwriteSchema", "true") \
+        .save(ruta)
+    print(f"Guardado en: {ruta}")
+
+
+# Procesamos las 7 tablas en orden
+for nombre, patron in TABLAS_FAERS:
+    df = ingestar_tabla(nombre, patron)
+    if df is not None:
+        guardar_tabla(df, nombre)
+
+print("\n" + "="*50)
+print("INGESTA COMPLETA — todas las tablas procesadas")
+print("="*50)
+
+spark.stop()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
