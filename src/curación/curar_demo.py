@@ -23,7 +23,7 @@ y se eliminan espacios.
 from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import (
     col, max as spark_max, when, trim, upper,
-    to_date, regexp_replace
+    regexp_replace, expr
 )
 from delta import configure_spark_with_delta_pip
 import os
@@ -95,30 +95,29 @@ demo_edad_limpia = demo_edad.withColumn(
 )
 
 # Regla 4. Normalización de campos de texto
-# reporter_country y sex se normalizan para evitar variantes.
+# reporter_country, occr_country y sex se normalizan para evitar variantes.
 demo_texto = demo_edad_limpia \
     .withColumn("reporter_country", upper(trim(col("reporter_country")))) \
     .withColumn("occr_country", upper(trim(col("occr_country")))) \
     .withColumn("sex", upper(trim(col("sex"))))
 
 # Regla 5. Conversión de fechas
-# Los campos de fecha vienen como string tipo "20200110".
-# Convertimos a tipo fecha real con formato yyyyMMdd.
+# Los campos de fecha vienen como string tipo "20200110",
+# tambien parciales con solo año+mes (200210) o solo año (2008).
+# try_to_date devuelve NULL en vez de lanzar error para formatos no válidos.
+# En event_dt se eliminan primero los valores duplicados separados por coma.
 demo_fechas = demo_texto \
     .withColumn("fda_dt_parsed",
-        to_date(col("fda_dt").cast("string"), "yyyyMMdd")) \
+        expr("try_to_date(fda_dt, 'yyyyMMdd')")) \
     .withColumn("event_dt_parsed",
-        to_date(
-            regexp_replace(col("event_dt").cast("string"), ",.*", ""),
-            "yyyyMMdd"
-        )
-    )
+        expr("try_to_date(regexp_replace(event_dt, ',.*', ''), 'yyyyMMdd')"))
 
 total_final = demo_fechas.count()
 print(f"\nRegistros finales DEMO curado: {total_final:,}")
-print(f"Reducción total respecto al original: {total_inicial - total_final:,} registros")
+print(f"Reducción total respecto al original: "
+      f"{total_inicial - total_final:,} registros")
 
-# Guardamos DEMO curado en Delta Lake sobreescribiendo la versión anterior
+# Guardamos DEMO curado en Delta Lake
 ruta_salida = f"{CURATED_PATH}/demo_curado"
 demo_fechas.write \
     .format("delta") \
