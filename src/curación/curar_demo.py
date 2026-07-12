@@ -51,9 +51,11 @@ print(f"\nRegistros iniciales DEMO: {total_inicial:,}")
 # FAERS puede contener varias versiones del mismo reporte (caseid).
 # Nos quedamos solo con la versión más reciente de cada caso.
 ventana = Window.partitionBy("caseid")
-demo_dedup = demo.withColumn("max_version", spark_max("caseversion").over(ventana)) \
-                 .filter(col("caseversion") == col("max_version")) \
-                 .drop("max_version")
+demo_dedup = demo \
+    .withColumn("caseversion_int", col("caseversion").cast("integer")) \
+    .withColumn("max_version", spark_max("caseversion_int").over(ventana)) \
+    .filter(col("caseversion_int") == col("max_version")) \
+    .drop("max_version", "caseversion_int")
 
 total_dedup = demo_dedup.count()
 print(f"Tras deduplicación: {total_dedup:,} ({total_inicial - total_dedup:,} duplicados eliminados)")
@@ -96,10 +98,16 @@ demo_edad_limpia = demo_edad.withColumn(
 
 # Regla 4. Normalización de campos de texto
 # reporter_country, occr_country y sex se normalizan para evitar variantes.
+# Se añade modificación a sex, se mapea a valores estándar M/F para evitar variantes como "MALE", "FEMALE", "1", "2",
+# que aparecen en trimestres antiguos de FAERS.
 demo_texto = demo_edad_limpia \
     .withColumn("reporter_country", upper(trim(col("reporter_country")))) \
-    .withColumn("occr_country", upper(trim(col("occr_country")))) \
-    .withColumn("sex", upper(trim(col("sex"))))
+    .withColumn("occr_country",     upper(trim(col("occr_country")))) \
+    .withColumn("sex",
+        when(upper(trim(col("sex"))).isin("M", "MALE", "1"), "M")
+        .when(upper(trim(col("sex"))).isin("F", "FEMALE", "2"), "F")
+        .otherwise(None)
+    )
 
 # Regla 5. Conversión de fechas
 # Los campos de fecha vienen como string tipo "20200110",
