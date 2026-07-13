@@ -68,6 +68,45 @@ reac_norm = reac_alineado \
         ))
     )
 
+# Regla 3. Eliminación de registros sin término de reacción
+sin_pt = reac_norm.filter(
+    col("pt").isNull() | (trim(col("pt")) == "")
+).count()
+
+reac_limpio = reac_norm.filter(
+    col("pt_norm").isNotNull() & (col("pt_norm") != "")
+)
+
+print(f"\nRegistros sin término MedDRA eliminados: {sin_pt:,}")
+
+total_final = reac_limpio.count()
+print(f"\nRegistros finales REAC curado: {total_final:,}")
+print(f"Reducción total respecto al original: "
+      f"{total_inicial - total_final:,} registros")
+
+# Términos MedDRA únicos tras normalización
+terminos_unicos = reac_limpio.select("pt_norm").distinct().count()
+print(f"\nTérminos MedDRA únicos: {terminos_unicos:,}")
+
+# Top 20 reacciones más notificadas
+print("\nTop 20 reacciones adversas más notificadas:")
+reac_limpio.groupBy("pt_norm").count() \
+    .orderBy(col("count").desc()) \
+    .show(20, truncate=False)
+
+# Guardamos REAC curado en Delta Lake
+ruta_salida = f"{CURATED_PATH}/reac_curado"
+reac_limpio.write \
+    .format("delta") \
+    .mode("overwrite") \
+    .option("overwriteSchema", "true") \
+    .save(ruta_salida)
+
+print(f"\nREAC curado guardado en: {ruta_salida}")
+print("\n=== SCHEMA REAC CURADO ===")
+reac_limpio.printSchema()
+
+spark.stop()
 
 
 
