@@ -134,7 +134,7 @@ drug_limpio.filter(col("rol") == "PS") \
 # Guardamos DRUG curado en Delta Lake
 ruta_salida = f"{CURATED_PATH}/drug_curado"
 drug_limpio.write \
-    .format("delta") \
+    .format("delta")  \
     .mode("overwrite") \
     .option("overwriteSchema", "true") \
     .save(ruta_salida)

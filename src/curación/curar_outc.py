@@ -62,6 +62,41 @@ outc_norm = outc_alineado.withColumn(
 )
 
 # Regla 3. Eliminación de registros sin código de desenlace
+sin_outc = outc_norm.filter(
+    col("outc_cod").isNull() | (trim(col("outc_cod")) == "")
+).count()
+
+outc_limpio = outc_norm.filter(
+    col("outc_cod_norm").isNotNull() & (col("outc_cod_norm") != "")
+)
+
+print(f"\nRegistros sin código de desenlace eliminados: {sin_outc:,}")
+
+total_final = outc_limpio.count()
+print(f"\nRegistros finales OUTC curado: {total_final:,}")
+print(f"Reducción total respecto al original: "
+      f"{total_inicial - total_final:,} registros")
+
+
+# Regla 4. Distribución por tipo de desenlace
+print("\nDistribución por código de desenlace:")
+outc_limpio.groupBy("outc_cod_norm").count() \
+    .orderBy(col("count").desc()) \
+    .show(truncate=False)
+
+# Guardamos OUTC curado en Delta Lake
+ruta_salida = f"{CURATED_PATH}/outc_curado"
+outc_limpio.write \
+    .format("delta") \
+    .mode("overwrite") \
+    .option("overwriteSchema", "true") \
+    .save(ruta_salida)
+
+print(f"\nOUTC curado guardado en: {ruta_salida}")
+print("\n=== SCHEMA OUTC CURADO ===")
+outc_limpio.printSchema()
+
+spark.stop()
 
 
 

@@ -23,7 +23,7 @@ y se eliminan espacios.
 from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import (
     col, max as spark_max, when, trim, upper,
-    regexp_replace, expr
+    regexp_replace, expr, row_number
 )
 from delta import configure_spark_with_delta_pip
 import os
@@ -48,17 +48,23 @@ total_inicial = demo.count()
 print(f"\nRegistros iniciales DEMO: {total_inicial:,}")
 
 # Regla 1 - Deduplicación por caseversion
+# Tras ejecutar la validación de la curación me topo con 144 primaryid duplicados
+# Se modifica bloque deduplicación caseversion
 # FAERS puede contener varias versiones del mismo reporte (caseid).
 # Nos quedamos solo con la versión más reciente de cada caso.
-ventana = Window.partitionBy("caseid")
+# Si hay un empate en caseversion (el mismo reporte aparece en dos trimestres)
+# Desempatamos por primaryid quedándonos con el mayor que corresponde
+# a la carga más reciente.
+ventana_dedup = Window.partitionBy("caseid").orderBy(
+    col("caseversion_int").desc(),
+    col("primaryid").cast("long").desc()
+)
+
 demo_dedup = demo \
     .withColumn("caseversion_int", col("caseversion").cast("integer")) \
-    .withColumn("max_version", spark_max("caseversion_int").over(ventana)) \
-    .filter(col("caseversion_int") == col("max_version")) \
-    .drop("max_version", "caseversion_int")
-
-total_dedup = demo_dedup.count()
-print(f"Tras deduplicación: {total_dedup:,} ({total_inicial - total_dedup:,} duplicados eliminados)")
+    .withColumn("fila", row_number().over(ventana_dedup)) \
+    .filter(col("fila") == 1) \
+    .drop("fila", "caseversion_int")
 
 # Regla 2. Normalización de edad a años
 # Convertimos todas las unidades a años para poder filtrar y analizar.
