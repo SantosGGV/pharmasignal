@@ -1,0 +1,85 @@
+# paises.txt — Datos de país.  Formato: codigo|iso3|nombre_es|nombre_en
+# iso3 se usa para el mapa (coropleta). Deja iso3 vacío si el país no va al mapa.
+# Líneas vacías y las que empiezan por # se ignoran.
+
+US|USA|Estados Unidos|United States
+CA|CAN|Canadá|Canada
+GB|GBR|Reino Unido|United Kingdom
+FR|FRA|Francia|France
+DE|DEU|Alemania|Germany
+IT|ITA|Italia|Italy
+ES|ESP|España|Spain
+JP|JPN|Japón|Japan
+AU|AUS|Australia|Australia
+NL|NLD|Países Bajos|Netherlands
+SE|SWE|Suecia|Sweden
+CH|CHE|Suiza|Switzerland
+BE|BEL|Bélgica|Belgium
+AT|AUT|Austria|Austria
+DK|DNK|Dinamarca|Denmark
+NO|NOR|Noruega|Norway
+FI|FIN|Finlandia|Finland
+IE|IRL|Irlanda|Ireland
+PT|PRT|Portugal|Portugal
+GR|GRC|Grecia|Greece
+KR|KOR|Corea del Sur|South Korea
+IL|ISR|Israel|Israel
+NZ|NZL|Nueva Zelanda|New Zealand
+SG|SGP|Singapur|Singapore
+CZ|CZE|Chequia|Czechia
+PL|POL|Polonia|Poland
+HU|HUN|Hungría|Hungary
+SK|SVK|Eslovaquia|Slovakia
+SI|SVN|Eslovenia|Slovenia
+EE|EST|Estonia|Estonia
+HR|HRV|Croacia|Croatia
+LT|LTU|Lituania|Lithuania
+LV|LVA|Letonia|Latvia
+CY|CYP|Chipre|Cyprus
+MT|MLT|Malta|Malta
+LU|LUX|Luxemburgo|Luxembourg
+IS|ISL|Islandia|Iceland
+AE|ARE|Emiratos Árabes Unidos|United Arab Emirates
+SA|SAU|Arabia Saudí|Saudi Arabia
+QA|QAT|Catar|Qatar
+CN|CHN|China|China
+BR|BRA|Brasil|Brazil
+IN|IND|India|India
+MX|MEX|México|Mexico
+RU|RUS|Rusia|Russia
+TR|TUR|Turquía|Türkiye
+AR|ARG|Argentina|Argentina
+TH|THA|Tailandia|Thailand
+ZA|ZAF|Sudáfrica|South Africa
+CO|COL|Colombia|Colombia
+MY|MYS|Malasia|Malaysia
+ID|IDN|Indonesia|Indonesia
+PH|PHL|Filipinas|Philippines
+VN|VNM|Vietnam|Vietnam
+EG|EGY|Egipto|Egypt
+PE|PER|Perú|Peru
+CL|CHL|Chile|Chile
+RO|ROU|Rumanía|Romania
+BG|BGR|Bulgaria|Bulgaria
+UA|UKR|Ucrania|Ukraine
+MA|MAR|Marruecos|Morocco
+DZ|DZA|Argelia|Algeria
+TN|TUN|Túnez|Tunisia
+JO|JOR|Jordania|Jordan
+LB|LBN|Líbano|Lebanon
+EC|ECU|Ecuador|Ecuador
+DO|DOM|Rep. Dominicana|Dominican Rep.
+GT|GTM|Guatemala|Guatemala
+PY|PRY|Paraguay|Paraguay
+BO|BOL|Bolivia|Bolivia
+TW|TWN|Taiwán|Taiwan
+HK|HKG|Hong Kong|Hong Kong
+PK|PAK|Pakistán|Pakistan
+BD|BGD|Bangladés|Bangladesh
+NG|NGA|Nigeria|Nigeria
+KE|KEN|Kenia|Kenya
+VE|VEN|Venezuela|Venezuela
+UY|URY|Uruguay|Uruguay
+CR|CRI|Costa Rica|Costa Rica
+PA|PAN|Panamá|Panama
+EU||Unión Europea (agregado)|European Union (aggregate)
