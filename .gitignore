@@ -17,3 +17,7 @@ spark-warehouse/
 __pycache__/
 *.pyc
 *.pyo
+
+.venv/
+__pycache__/
+*.pyc

@@ -1,0 +1,337 @@
+# terminos_es.txt — Diccionario de traducción de términos MedDRA (EN|ES)
+# Formato:  termino_en|termino_es   (en minúsculas, una línea por término)
+# Las líneas vacías y las que empiezan por # se ignoran.
+# Edita o añade términos aquí sin tocar el código.
+
+# --- Generales ---
+nausea|náuseas
+vomiting|vómitos
+diarrhoea|diarrea
+diarrhea|diarrea
+headache|cefalea
+dizziness|mareo
+fatigue|fatiga
+asthenia|astenia
+malaise|malestar general
+pyrexia|fiebre
+death|muerte
+pain|dolor
+chills|escalofríos
+feeling hot|sensación de calor
+feeling cold|sensación de frío
+feeling abnormal|sensación anómala
+general physical health deterioration|deterioro del estado físico general
+
+# --- Uso del fármaco / eficacia ---
+drug ineffective|fármaco ineficaz
+off label use|uso fuera de indicación
+incorrect dose administered|dosis incorrecta administrada
+extra dose administered|dosis adicional administrada
+product dose omission issue|omisión de dosis del producto
+wrong technique in product usage process|técnica incorrecta de uso del producto
+product use issue|problema de uso del producto
+product quality issue|problema de calidad del producto
+medication error|error de medicación
+overdose|sobredosis
+drug interaction|interacción farmacológica
+drug withdrawal syndrome|síndrome de abstinencia
+therapeutic response decreased|respuesta terapéutica disminuida
+therapeutic product effect incomplete|efecto terapéutico incompleto
+condition aggravated|empeoramiento del cuadro
+disease progression|progresión de la enfermedad
+disease recurrence|recidiva de la enfermedad
+no adverse event|sin acontecimiento adverso
+
+# --- Digestivo ---
+abdominal pain|dolor abdominal
+abdominal pain upper|dolor abdominal superior
+abdominal pain lower|dolor abdominal inferior
+abdominal discomfort|molestia abdominal
+abdominal distension|distensión abdominal
+constipation|estreñimiento
+decreased appetite|disminución del apetito
+increased appetite|aumento del apetito
+dyspepsia|dispepsia
+gastrooesophageal reflux disease|reflujo gastroesofágico
+flatulence|flatulencia
+eructation|eructos
+dry mouth|sequedad de boca
+dysgeusia|disgeusia
+taste disorder|trastorno del gusto
+stomatitis|estomatitis
+mouth ulceration|úlcera bucal
+dysphagia|disfagia
+gastric emptying impaired|vaciado gástrico alterado
+gastroparesis|gastroparesia
+ileus|íleo
+intestinal obstruction|obstrucción intestinal
+gastritis|gastritis
+gastroenteritis|gastroenteritis
+colitis|colitis
+enterocolitis|enterocolitis
+gastrointestinal haemorrhage|hemorragia gastrointestinal
+melaena|melena
+rectal haemorrhage|hemorragia rectal
+pancreatitis|pancreatitis
+pancreatitis acute|pancreatitis aguda
+cholelithiasis|colelitiasis
+cholecystitis|colecistitis
+cholecystitis acute|colecistitis aguda
+
+# --- Hígado / riñón / metabolismo ---
+hepatotoxicity|hepatotoxicidad
+liver injury|daño hepático
+hepatic function abnormal|función hepática anormal
+jaundice|ictericia
+alanine aminotransferase increased|aumento de la ALT
+aspartate aminotransferase increased|aumento de la AST
+blood bilirubin increased|aumento de la bilirrubina
+renal impairment|insuficiencia renal
+renal failure|insuficiencia renal
+acute kidney injury|lesión renal aguda
+blood creatinine increased|aumento de la creatinina
+haematuria|hematuria
+proteinuria|proteinuria
+urinary tract infection|infección urinaria
+hypoglycaemia|hipoglucemia
+hyperglycaemia|hiperglucemia
+hyperkalaemia|hiperpotasemia
+hypokalaemia|hipopotasemia
+hyponatraemia|hiponatremia
+dehydration|deshidratación
+thirst|sed
+blood glucose increased|aumento de la glucemia
+blood glucose decreased|disminución de la glucemia
+
+# --- Piel ---
+rash|erupción cutánea
+rash maculopapular|erupción maculopapular
+rash erythematous|erupción eritematosa
+dermatitis|dermatitis
+pruritus|prurito
+urticaria|urticaria
+erythema|eritema
+angioedema|angioedema
+photosensitivity reaction|reacción de fotosensibilidad
+dry skin|piel seca
+alopecia|alopecia
+hyperhidrosis|hiperhidrosis
+night sweats|sudores nocturnos
+flushing|rubor
+hot flush|sofoco
+
+# --- Neuro / psiquiátrico ---
+anxiety|ansiedad
+depression|depresión
+depressed mood|estado de ánimo deprimido
+insomnia|insomnio
+sleep disorder|trastorno del sueño
+nightmare|pesadilla
+somnolence|somnolencia
+lethargy|letargo
+irritability|irritabilidad
+nervousness|nerviosismo
+panic attack|ataque de pánico
+tremor|temblor
+paraesthesia|parestesia
+seizure|convulsión
+syncope|síncope
+loss of consciousness|pérdida de conciencia
+confusional state|estado confusional
+memory impairment|deterioro de la memoria
+balance disorder|trastorno del equilibrio
+gait disturbance|alteración de la marcha
+suicidal ideation|ideación suicida
+suicide attempt|intento de suicidio
+completed suicide|suicidio consumado
+libido decreased|disminución de la libido
+erectile dysfunction|disfunción eréctil
+amenorrhoea|amenorrea
+
+# --- Cardiovascular ---
+hypertension|hipertensión
+hypotension|hipotensión
+blood pressure increased|aumento de la presión arterial
+blood pressure decreased|disminución de la presión arterial
+tachycardia|taquicardia
+palpitations|palpitaciones
+heart rate increased|aumento de la frecuencia cardíaca
+atrial fibrillation|fibrilación auricular
+chest pain|dolor torácico
+myocardial infarction|infarto de miocardio
+deep vein thrombosis|trombosis venosa profunda
+pulmonary embolism|embolia pulmonar
+oedema peripheral|edema periférico
+peripheral swelling|hinchazón periférica
+oedema|edema
+face oedema|edema facial
+swelling|hinchazón
+
+# --- Respiratorio ---
+cough|tos
+productive cough|tos productiva
+dyspnoea|disnea
+dyspnoea exertional|disnea de esfuerzo
+wheezing|sibilancias
+nasal congestion|congestión nasal
+rhinorrhoea|rinorrea
+oropharyngeal pain|dolor orofaríngeo
+throat irritation|irritación de garganta
+dysphonia|disfonía
+epistaxis|epistaxis
+nasopharyngitis|nasofaringitis
+upper respiratory tract infection|infección respiratoria superior
+respiratory distress|dificultad respiratoria
+hypoxia|hipoxia
+oxygen saturation decreased|disminución de la saturación de oxígeno
+pleural effusion|derrame pleural
+interstitial lung disease|enfermedad pulmonar intersticial
+
+# --- Sangre / infecciones ---
+anaemia|anemia
+thrombocytopenia|trombocitopenia
+platelet count decreased|disminución de plaquetas
+neutropenia|neutropenia
+febrile neutropenia|neutropenia febril
+leukopenia|leucopenia
+lymphopenia|linfopenia
+white blood cell count decreased|disminución de leucocitos
+haemoglobin decreased|disminución de hemoglobina
+pneumonia|neumonía
+sepsis|sepsis
+septic shock|choque séptico
+cellulitis|celulitis
+infection|infección
+herpes zoster|herpes zóster
+covid-19|covid-19
+influenza like illness|enfermedad pseudogripal
+drug hypersensitivity|hipersensibilidad al fármaco
+anaphylactic reaction|reacción anafiláctica
+
+# --- Musculoesquelético / ojo / oído ---
+arthralgia|artralgia
+myalgia|mialgia
+back pain|dolor de espalda
+pain in extremity|dolor en extremidad
+muscle spasms|espasmos musculares
+muscular weakness|debilidad muscular
+joint swelling|hinchazón articular
+vision blurred|visión borrosa
+visual impairment|deterioro visual
+diplopia|diplopía
+dry eye|ojo seco
+eye pain|dolor ocular
+photophobia|fotofobia
+optic ischaemic neuropathy|neuropatía óptica isquémica
+tinnitus|acúfenos
+vertigo|vértigo
+ear pain|dolor de oído
+hearing impaired|deterioro auditivo
+
+# --- Lugar de inyección ---
+injection site pain|dolor en el lugar de inyección
+injection site haemorrhage|hemorragia en el lugar de inyección
+injection site erythema|eritema en el lugar de inyección
+injection site reaction|reacción en el lugar de inyección
+
+# --- Peso ---
+weight decreased|pérdida de peso
+weight increased|aumento de peso
+
+# --- Indicaciones frecuentes ---
+type 2 diabetes mellitus|diabetes mellitus tipo 2
+diabetes mellitus|diabetes mellitus
+obesity|obesidad
+rheumatoid arthritis|artritis reumatoide
+prophylaxis|profilaxis
+asthma|asma
+multiple sclerosis|esclerosis múltiple
+psoriasis|psoriasis
+breast cancer|cáncer de mama
+product used for unknown indication|producto usado por indicación desconocida
+contraception|anticoncepción
+hypothyroidism|hipotiroidismo
+hypercholesterolaemia|hipercolesterolemia
+crohn's disease|enfermedad de crohn
+ulcerative colitis|colitis ulcerosa
+weight management|control del peso
+smoking cessation|deshabituación tabáquica
+osteoporosis|osteoporosis
+migraine|migraña
+epilepsy|epilepsia
+pain management|manejo del dolor
+
+# --- Añadidos (revisión capturas) ---
+adverse drug reaction|reacción adversa a medicamento
+adverse event|acontecimiento adverso
+adverse reaction|reacción adversa
+loss of libido|pérdida de libido
+sexual dysfunction|disfunción sexual
+anhedonia|anhedonia
+muscle atrophy|atrofia muscular
+long qt syndrome|síndrome de QT largo
+sprue-like enteropathy|enteropatía similar al esprúe
+hepatitis cholestatic|hepatitis colestásica
+mixed liver injury|daño hepático mixto
+hyperbilirubinaemia|hiperbilirrubinemia
+hypertransaminasaemia|hipertransaminasemia
+hepatitis toxic|hepatitis tóxica
+type iv hypersensitivity reaction|reacción de hipersensibilidad tipo IV
+b-cell type acute leukaemia|leucemia aguda de células B
+bicytopenia|bicitopenia
+toxic skin eruption|erupción cutánea tóxica
+symmetrical drug-related intertriginous and flexural exanthema|exantema simétrico intertriginoso y flexural por fármacos (SDRIFE)
+emotional distress|malestar emocional
+drug dose omission by device|omisión de dosis por el dispositivo
+therapy interrupted|tratamiento interrumpido
+accidental exposure to product|exposición accidental al producto
+drug dependence|dependencia de fármacos
+sinusitis|sinusitis
+device difficult to use|dispositivo difícil de usar
+bladder cancer|cáncer de vejiga
+prostate cancer|cáncer de próstata
+colorectal cancer|cáncer colorrectal
+lung cancer|cáncer de pulmón
+pancreatic cancer|cáncer de páncreas
+colon cancer|cáncer de colon
+renal cancer|cáncer renal
+thyroid cancer|cáncer de tiroides
+neoplasm malignant|neoplasia maligna
+malignant neoplasm progression|progresión de neoplasia maligna
+multiple allergies|alergias múltiples
+product preparation error|error de preparación del producto
+product availability issue|problema de disponibilidad del producto
+product substitution issue|problema de sustitución del producto
+intentional product use issue|uso intencionado incorrecto del producto
+product use in unapproved indication|uso del producto en indicación no aprobada
+product physical issue|problema físico del producto
+device malfunction|mal funcionamiento del dispositivo
+stress cardiomyopathy|miocardiopatía por estrés
+kounis syndrome|síndrome de Kounis
+accidental overdose|sobredosis accidental
+generalised oedema|edema generalizado
+nasal dryness|sequedad nasal
+ligament sprain|esguince de ligamento
+dermatitis atopic|dermatitis atópica
+atopic dermatitis|dermatitis atópica
+drug reaction with eosinophilia and systemic symptoms|reacción a fármaco con eosinofilia y síntomas sistémicos (DRESS)
+eye operation|operación ocular
+food poisoning|intoxicación alimentaria
+drug abuse|abuso de fármacos
+treatment noncompliance|incumplimiento del tratamiento
+wrong drug administered|fármaco erróneo administrado
+expired product administered|producto caducado administrado
+therapeutic agent toxicity|toxicidad del agente terapéutico
+dependence|dependencia
+acne|acné
+skin burning sensation|sensación de quemazón cutánea
+oesophageal carcinoma|carcinoma esofágico
+esophageal carcinoma|carcinoma esofágico
+eczema|eccema
+glycosuria|glucosuria
+neuropathy peripheral|neuropatía periférica
+peripheral neuropathy|neuropatía periférica
+injection site swelling|hinchazón en el lugar de inyección
+incorrect dose administered by device|dosis incorrecta administrada por el dispositivo
+device use error|error de uso del dispositivo
+renal cancer|cáncer renal
