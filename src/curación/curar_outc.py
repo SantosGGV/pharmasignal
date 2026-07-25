@@ -2,22 +2,7 @@
 curar_outc.py
 
 Curación de la tabla OUTC de FAERS.
-Contiene los desenlaces clínicos de cada reporte.
-
-Códigos reportados de desenlaces en FAERS:
-- DE: Death (muerte)
-- LT: Life-Threatening (riesgo vital)
-- HO: Hospitalization (hospitalización)
-- DS: Disability (discapacidad)
-- CA: Congenital Anomaly (anomalía congénita)
-- RI: Required Intervention (intervención médica requerida)
-- OT: Other (otro)
-
-Reglas aplicadas:
-1. Alineación con DEMO curado por primaryid.
-2. Normalización del código de desenlace a mayúsculas.
-3. Eliminación de registros con outc_cod nulo o desconocido.
-4. Generación de métricas de gravedad por desenlace.
+Normaliza los códigos de desenlace y elimina duplicados por primaryid.
 
 """
 

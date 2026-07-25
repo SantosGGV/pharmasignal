@@ -90,7 +90,7 @@ def ingestar_tabla(nombre_tabla, patron_fichero):
     # se unan correctamente rellenando con null las columnas que falten
     consolidado = dfs[0]
     for df in dfs[1:]:
-        consolidado = consolidado.unionByName(df, allowMissingColumns=True)
+        consolidado = consolidado.unionByName(df, allowMissingColumns=True) # nota mental: uso allowMissingColumns porque FAERS cambia columnas entre trimestres
 
     print(f"\n  Total {nombre_tabla.upper()}: {total_filas:,} filas")
     return consolidado
