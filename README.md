@@ -28,16 +28,18 @@ pip install -r requirements.txt
 
 # 2. Pipeline (necesario seguir este órden específico)
 python src/ingesta/ingesta_faers.py
+python src/curación/curar_demo.py
 python src/curación/curar_drug.py
 python src/curación/curar_reac.py
 python src/curación/curar_outc.py
 python src/curación/curar_indi.py
 python src/curación/curar_ther.py
 python src/curación/curar_rpsr.py
+python src/curación/curar_geografia.py
 python src/curación/validar_curacion.py
 python src/analisis/prr_ror.py
-python src/analisis/análisis_geografico.py
-python src/analisis/análisis_temporal.py
+python src/analisis/analisis_geografico.py
+python src/analisis/analisis_temporal.py
 
 # 3. Frontend
 streamlit run src/app/streamlit_app.py
