@@ -2,21 +2,8 @@
 curar_demo.py
 
 Curación de la tabla DEMO de FAERS
-Se aplican las siguientes reglas de curación:
-
-1. Deduplicación: FAERS permite múltiples versiones del mismo caso.
-Se conserva únicamente la versión más reciente de cada caseid para evitar
-de tal manera el doble conteo de reportes.
-
-2. Normalización de la edad: el campo age_cod indica la unidad de medida
-(YR= años, MON=meses, DEC=décadas, WK=semanas, DY=días). Se convierte todo
-a años y se filtran los valores fuera del rango 0-120.
-
-3. Normalización de fechas: los campos de fecha vienen como enteros
-(ej: 20200110). Se convierten a tipo fecha real.
-
-4. Estandarización de campos de texto: sex y reporter_country se normalizan a MAYUS
-y se eliminan espacios.
+Se deduplica quedándose con la última versión de cada caso (caseversion),
+se pasa la edad a años, y se normalizan sexo, país y fechas.
 
 """
 

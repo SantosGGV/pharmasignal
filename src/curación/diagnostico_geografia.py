@@ -1,7 +1,7 @@
 """
 diagnostico_geografia.py
 
-Diagnóstico del hallazgo ES→EU en FAERS.
+Diagnóstico del hallazgo ES -> EU en FAERS.
 Analiza la evolución del código de país España a lo largo
 de los 24 trimestres para cuantificar el alcance del cambio
 de codificación detectado a partir de 2025Q3.

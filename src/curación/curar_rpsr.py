@@ -4,26 +4,6 @@ curar_rpsr.py
 Curación de la tabla RPSR de FAERS.
 Contiene la fuente de la notificación del evento adverso.
 
-Se identifican los siguientes códigos de fuente en FAERS:
-- FGN: Foreign (notificación procedente del extranjero)
-- SDY: Study (estudio)
-- LIT: Literature (literatura científica)
-- CSM: Consumer (consumidor/paciente)
-- HP: Health Professional (profesional sanitario)
-- UF: User Facility (centro sanitario)
-- CR: Company Representative (representante de la compañía)
-- DT: Distributor (distribuidor)
-- OTH: Other (otro)
-
-La fuente de notificación es muy importante concretamente para este proyecto
-ya que condiciona la calidad del reporte. Las notificaciones de profesionales sanitarios
-suelen tener una mayor calidad que la de los consumidores.
-
-Reglas aplicadas:
-1. Alineación con DEMO curado con primaryid
-2. Normalización del código de la fuente a mayúsculas
-3. Distribución por tipo de fuente.
-
 """
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, trim, upper

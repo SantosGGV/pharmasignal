@@ -3,11 +3,7 @@ curar_indi.py
 
 Curación de la tabla INDI de FAERS.
 Contiene las indicaciones terapéuticas para las que se administró
-cada fármaco, codificadas en terminología MedDRA.
-
-La indicación es muy relevante para el análisis ya que permite distinguir
-entre reacciones adversas al uso aprobado del fármaco y las asociadas a usos
-fuera de indicación.
+cada fármaco.
 
 Reglas aplicadas en esta curación:
 1. Alineación con DEMO curado por el primaryid
