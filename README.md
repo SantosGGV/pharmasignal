@@ -18,19 +18,8 @@ FAERS (FDA Adverse Event Reporting System), 2020–2025, vía ficheros ASCII + O
 - Entorno: WSL2 Ubuntu 24.04
 
 ## Estructura del proyecto
-├── src/
-  ├── ingesta/        (explorar_faers.py, ingesta_faers.py)
-  ├── curacion/       (curar_demo/drug/reac/outc/indi/ther/rpsr.py,
-  │                    	       curar_geografia.py, validar_curacion.py, traducir_terminos.py)
-  ├── analisis/       (prr_ror.py, analisis_geografico.py, analisis_temporal.py)
-  └── app/            (streamlit_app.py)
-├── data/
-  ├── raw/            (ficheros ASCII FAERS — excluidos por .gitignore)
-  ├── curated/        (tablas Delta — excluidas por .gitignore)
-  └── diccionarios/   (paises.txt, terminos_es.txt)
-├── requirements.txt
-├── .gitignore
-└── README.md
+<img width="497" height="206" alt="image" src="https://github.com/user-attachments/assets/06091dba-0940-42c1-86ef-26f3c4c6caeb" />
+
 
 
 ## Ejecución
