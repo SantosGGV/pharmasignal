@@ -57,3 +57,4 @@ uvicorn==0.51.0
 watchdog==6.0.0
 websockets==16.0
 zipp==4.1.0
+deltalake==1.6.2
