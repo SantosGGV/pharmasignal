@@ -135,14 +135,31 @@ PLOTLY_CONFIG = {
 FAMILIAS = {
     "glp1": {"label": "GLP-1 (Ozempic, Wegovy, Mounjaro…)",
              "serie": "reportes_glp1",
+             # Añado byetta, bydureon y lixisenatida: son marcas de principios
+             # activos que ya estaban en la lista pero cuyos nombres comerciales
+             # faltaban, así que se perdían unos 10.900 reportes.
              "drugs": ["semaglutide", "ozempic", "wegovy", "rybelsus",
                        "tirzepatide", "mounjaro", "zepbound", "liraglutide",
                        "saxenda", "victoza", "dulaglutide", "trulicity",
-                       "exenatide"]},
+                       "exenatide", "byetta", "bydureon", "bydureon bcise",
+                       "lixisenatide", "lyxumia", "adlyxin"]},
+    # OJO, cambio importante: he sacado hydroxychloroquine de aquí.
+    # No es un fármaco COVID: es un antipalúdico cuya indicación principal es
+    # lupus y artritis reumatoide, con un volumen constante en los 24 trimestres.
+    # Al mezclarlo con los antivirales, el gráfico de efectos salía lleno de
+    # síntomas de lupus y de la propia enfermedad.
+    # Añado también los anticuerpos monoclonales, que sí son exclusivos de COVID.
+    # Las grafías con "?" son un artefacto de exportación de la FDA en cuatro
+    # trimestres de 2020-2021, por eso hay que poner las dos formas.
     "covid": {"label": "COVID-19 (Paxlovid, Remdesivir…)",
-              "serie": "reportes_covid",
-              "drugs": ["paxlovid", "nirmatrelvir", "remdesivir", "veklury",
-                        "molnupiravir", "lagevrio", "hydroxychloroquine"]},
+              "serie": "reportes_covid_antiviral",
+              "drugs": ["paxlovid", "nirmatrelvir", "nirmatrelvir\\ritonavir",
+                        "remdesivir", "veklury", "molnupiravir", "lagevrio",
+                        "sotrovimab", "bebtelovimab", "bamlanivimab",
+                        "etesevimab", "bamlanivimab\\etesevimab",
+                        "casirivimab", "imdevimab", "casirivimab\\imdevimab",
+                        "regen-cov", "regen?cov", "tixagevimab", "cilgavimab",
+                        "evusheld"]},
     "fina": {"label": "Finasterida (Propecia, Proscar)", "serie": None,
              "drugs": ["finasteride", "propecia", "proscar"]},
 }
@@ -170,12 +187,14 @@ def cargar(tabla: str):
         return None                      # si algo falla, prefiero None a que falle
 
 
-@st.cache_data(show_spinner=False)
 def cargar_diccionario_txt(nombre):
-    """Lee un diccionario 'en|es' desde un .txt de data/diccionarios/."""
-    # OJO, esta primera versión está cacheada. Justo debajo la vuelvo a definir
-    # SIN caché y esa segunda es la que manda (Python se queda con la última).
-    # La dejo documentada para acordarme de por qué hay dos.
+    """Lee 'en|es' desde un .txt. SIN caché: recoge tus ediciones al recargar."""
+    # La quiero sin caché a propósito: así, mientras voy ampliando el diccionario
+    # a mano, basta con recargar la página para ver los términos nuevos, sin
+    # tener que limpiar la caché de Streamlit.
+    # NOTA: antes había DOS definiciones de esta función, una cacheada y otra no.
+    # Python se quedaba siempre con la última, así que la primera era código
+    # muerto. He borrado la cacheada y he dejado solo esta, que es la que valía.
     ruta = os.path.join(DICC_DIR, nombre)
     d = {}
     if not os.path.isfile(ruta):
@@ -184,25 +203,6 @@ def cargar_diccionario_txt(nombre):
         for linea in f:
             linea = linea.strip()
             # Ignoro líneas vacías, comentarios (#) y las que no tengan el "|".
-            if not linea or linea.startswith("#") or "|" not in linea:
-                continue
-            en, es = linea.split("|", 1)
-            d[en.strip().lower()] = es.strip()
-    return d
-
-
-def cargar_diccionario_txt(nombre):
-    """Lee 'en|es' desde un .txt. SIN caché: recoge tus ediciones al recargar."""
-    # Esta es la que de verdad se usa. La quiero sin caché a propósito, así,
-    # mientras voy ampliando el diccionario a mano, basta con recargar la página
-    # para ver los términos nuevos, sin tener que limpiar la caché de Streamlit.
-    ruta = os.path.join(DICC_DIR, nombre)
-    d = {}
-    if not os.path.isfile(ruta):
-        return d
-    with open(ruta, encoding="utf-8") as f:
-        for linea in f:
-            linea = linea.strip()
             if not linea or linea.startswith("#") or "|" not in linea:
                 continue
             en, es = linea.split("|", 1)
@@ -371,23 +371,43 @@ def boton_html(fig, nombre):
         file_name=nombre, mime="text/html", key="html_" + nombre)
 
 
-def fig_mapa(perfil):
+def fig_mapa(perfil, col="reportes", log=True, escala=None, titulo=None,
+             min_reportes=0):
     # Mapa mundial. Necesita el código ISO3, así que primero mapeo
     # desde el ISO2 y descarto los países que no consiga traducir.
     # Por defecto se visualizaba el nombre del país completo, con esto
     # se logra visualizar "ES" en vez de "ESPAÑA". Para algunos países
     # con nombre extenso no llegaba a visualizarse.
+    #
+    # NUEVO: le paso por parámetro qué columna quiero pintar. Antes esta función
+    # solo sabía pintar volumen de reportes y la llamaba desde dos sitios con el
+    # mismo resultado. Ahora en Inicio pinto volumen y en Geográfico pinto el
+    # porcentaje de desenlaces mortales, que cuenta algo distinto.
+    # min_reportes sirve para el mapa de mortalidad: un país con 20 reportes
+    # puede dar un 40% de muertes y no significa nada, así que lo dejo fuera.
     mapa = con_nombre_pais(perfil)
+    if min_reportes:
+        mapa = mapa[mapa["reportes"] >= min_reportes]
     mapa["iso3"] = mapa["reporter_country"].map(ISO2_A_ISO3)
-    mapa = mapa.dropna(subset=["iso3"])
-    # Coloreo por el logaritmo de los reportes, no por el valor bruto: EE.UU.
-    # aplasta a todos los demás y sin escala log el mapa saldría entero.
-    # El colorbar de abajo vuelve a poner las etiquetas en la escala real (10, 100, 1K…) para que se entienda.
-    mapa["log_reportes"] = np.log10(mapa["reportes"].clip(lower=1))
+    mapa = mapa.dropna(subset=["iso3", col])
+
+    if log:
+        # Coloreo por el logaritmo, no por el valor bruto: EE.UU. aplasta a
+        # todos los demás y sin escala log el mapa saldría entero de un color.
+        # El colorbar de abajo vuelve a poner las etiquetas en la escala real.
+        mapa["_c"] = np.log10(mapa[col].clip(lower=1))
+        barra = dict(title=t("Reportes", "Reports"),
+                     tickvals=[1, 2, 3, 4, 5, 6],
+                     ticktext=["10", "100", "1K", "10K", "100K", "1M"])
+    else:
+        # Para porcentajes no hace falta log, el rango ya es manejable.
+        mapa["_c"] = mapa[col]
+        barra = dict(title=titulo or col)
+
     fig = px.choropleth(
-        mapa, locations="iso3", color="log_reportes", hover_name="pais",
-        hover_data={"reportes": ":,", "log_reportes": False, "iso3": False},
-        color_continuous_scale=["#16324F", "#2E75B6", "#7FB3E8"])
+        mapa, locations="iso3", color="_c", hover_name="pais",
+        hover_data={col: ":,.2f", "_c": False, "iso3": False},
+        color_continuous_scale=escala or ["#16324F", "#2E75B6", "#7FB3E8"])
     fig.update_layout(
         height=460, margin=dict(l=0, r=0, t=10, b=0),
         paper_bgcolor=BG, font=dict(color=INK, size=13),
@@ -396,10 +416,33 @@ def fig_mapa(perfil):
         geo=dict(bgcolor=BG, showframe=False, showcoastlines=False,
                  showland=True, landcolor="#1A2332",
                  projection_type="natural earth"),
-        coloraxis_colorbar=dict(
-            title=t("Reportes", "Reports"), tickvals=[1, 2, 3, 4, 5, 6],
-            ticktext=["10", "100", "1K", "10K", "100K", "1M"]))
+        coloraxis_colorbar=barra)
     return fig
+
+
+@st.cache_data(show_spinner=False)
+def buscar_farmaco(q: str):
+    # Busca un fármaco por texto libre dentro de la tabla de señales.
+    # Va cacheada por el texto buscado, así que si el usuario repite la misma
+    # búsqueda no vuelve a recorrer las 868.093 filas.
+    # OJO: devuelvo los datos sin traducir a propósito. La traducción depende del
+    # idioma, que es una variable global, y si la metiera aquí dentro la caché
+    # guardaría el resultado en el idioma equivocado.
+    senales = cargar("senales_prr_ror")
+    if senales is None or not q.strip():
+        return None
+    q = q.strip().lower()
+    # contains en vez de igualdad: el mismo fármaco aparece con muchas grafías
+    # (metformin, metformin hydrochloride, metformin hcl...), y el usuario no
+    # tiene por qué saber cuál escribir.
+    # regex=False es deliberado: impide que lo que escriba el usuario se
+    # interprete como una expresión regular.
+    df = senales[senales["drugname_norm"].str.contains(q, na=False, regex=False)].copy()
+    if not len(df):
+        return df
+    # Recupero los casos reales quitando el 0.5 de Haldane-Anscombe.
+    df["casos"] = (df["a"] - 0.5).round().astype(int)
+    return df
 
 
 def panel_divergencia(div, columna, etiqueta):
@@ -518,18 +561,22 @@ st.sidebar.caption(t("Una señal estadística es una hipótesis de trabajo, no u
                      "prueba de causalidad.",
                      "A statistical signal is a working hypothesis, not proof of "
                      "causality."))
+
+
 # ZONA 1 — INICIO
 # A partir de aquí cada zona es una función. No se ejecutan al definirse, abajo
 # del todo, según la 'zona' guardada en session_state, llamo a la que toque.
 def vista_inicio():
-    st.subheader(t("Un vistazo al sistema", "System at a glance"))
-    intro(t("Panorámica rápida del sistema y de los datos, para cualquier "
-            "visitante.", "A quick overview of the system and data, for anyone."))
     senales = cargar("senales_prr_ror")
     perfil = cargar("geo_perfil_paises")
 
-    # Cuatro métricas en fila. Cada m es una columna, .metric pinta la tarjeta.
-    # Uso el "—" como marcador de posición cuando la tabla aún no está.
+    # Reservo el estado del buscador antes de nada. Lo necesito porque los
+    # botones de ejemplo escriben aquí, y Streamlit no deja tocar el estado de
+    # un widget una vez creado: si el text_input existiera ya, petaría al pulsar.
+    if "q_farmaco" not in st.session_state:
+        st.session_state["q_farmaco"] = ""
+
+    # BLOQUE 1: métricas del sistema y descripción, lo primero de la página.
     m1, m2, m3, m4 = st.columns(4)
     if senales is not None:
         m1.metric(t("Combinaciones evaluadas", "Combinations evaluated"),
@@ -552,26 +599,134 @@ def vista_inicio():
         "detect **possible drug–adverse-effect associations** worth monitoring."))
     st.divider()
 
+    # BLOQUE 2: el mapa, a ancho completo.
     if perfil is not None:
         st.markdown("##### " + t("Dónde se notifica en el mundo",
                                  "Where reporting happens worldwide"))
         mostrar(fig_mapa(perfil), key="inicio_mapa")
         st.caption(t("Volumen de notificaciones por país (escala logarítmica).",
                      "Report volume by country (log scale)."))
+    else:
+        aviso_tabla("geo_perfil_paises", "analisis_geografico.py")
+
     st.divider()
 
-    # Curva de los GLP-1. px.area pinta el área
-    # bajo la línea, le fuerzo el color de línea y un relleno azul translúcido.
-    fam = cargar("serie_temporal_familias")
-    if fam is not None and "reportes_glp1" in fam.columns:
-        st.markdown("##### " + t("El fenómeno de la década: los fármacos GLP-1",
-                                 "The phenomenon of the decade: GLP-1 drugs"))
-        fam = fam.sort_values("trimestre")
-        fig = px.area(fam, x="trimestre", y="reportes_glp1",
-                      labels={"trimestre": "",
-                              "reportes_glp1": t("Notificaciones", "Reports")})
-        fig.update_traces(line_color=BLUE, fillcolor="rgba(79,155,232,0.25)")
-        mostrar(estilo_plotly(fig, 360), key="inicio_glp1")
+    # BLOQUE 3: el buscador.
+    st.markdown("##### " + t("¿Qué se ha notificado sobre un medicamento?",
+                             "What has been reported about a medicine?"))
+    intro(t("Escribe el nombre de un fármaco y verás qué efectos adversos se "
+            "notifican junto a él con más frecuencia de lo esperado.",
+            "Type a drug name to see which adverse effects are reported with it "
+            "more often than expected."))
+
+    # Truco de orden: reservo el hueco del input, pinto los botones (que
+    # escriben en session_state) y creo el input al final. Si el text_input
+    # existiera antes que los botones, Streamlit lanzaría excepción al pulsarlos.
+    caja = st.container()
+
+    st.caption(t("Prueba con:", "Try:"))
+    # Fármacos conocidos por el público general. Van con el nombre tal cual
+    # aparece en FAERS, que es en inglés o con la marca comercial: por eso
+    # "ibuprofen" y no "ibuprofeno", "omeprazole" y no "omeprazol".
+    ejemplos = ["ozempic", "ibuprofen", "omeprazole", "paracetamol", "metformin"]
+    cols_ej = st.columns(len(ejemplos))
+    for c, ej in zip(cols_ej, ejemplos):
+        if c.button(ej.capitalize(), use_container_width=True, key="ej_" + ej):
+            st.session_state["q_farmaco"] = ej
+
+    with caja:
+        q = st.text_input(
+            t("Buscar medicamento", "Search medicine"),
+            key="q_farmaco", label_visibility="collapsed",
+            placeholder=t("Escribe un fármaco: ozempic, ibuprofen, metformin…",
+                          "Type a drug: ozempic, ibuprofen, metformin…"))
+
+    if senales is None:
+        st.divider()
+        aviso_tabla("senales_prr_ror", "prr_ror.py")
+        return
+
+    # BLOQUE 4: resultado de la búsqueda. Si el usuario no ha escrito nada, no
+    # pinto nada aquí y la página termina en el aviso de causalidad.
+    if q.strip():
+        st.divider()
+        res = buscar_farmaco(q)
+        if res is None or not len(res):
+            st.warning(t(f"No hay notificaciones para «{q}». Los nombres están "
+                         "como aparecen en FAERS, normalmente en inglés o con la "
+                         "marca comercial (por ejemplo *ibuprofen*, no "
+                         "*ibuprofeno*).",
+                         f"No reports found for «{q}». Names appear as in FAERS, "
+                         "usually in English or as a brand name."))
+        else:
+            # Cuántas grafías distintas ha capturado la búsqueda. Lo enseño por
+            # transparencia: "metformin" trae 279 variantes y eso hay que decirlo.
+            grafias = res["drugname_norm"].nunique()
+            # a+b es el total de reportes que mencionan ese fármaco, y es
+            # constante dentro de cada grafía. Por eso agrupo primero y luego
+            # sumo, en vez de sumar la columna 'casos', que contaría cada reporte
+            # tantas veces como reacciones tenga.
+            reportes = int(res.groupby("drugname_norm")
+                           .apply(lambda g: (g["a"] + g["b"]).max()).sum())
+            confirmadas = res[res["es_senal"] & (res["casos"] >= 20)]
+
+            st.markdown("##### " + t(f"Resultados para «{q}»",
+                                     f"Results for «{q}»"))
+            r1, r2, r3 = st.columns(3)
+            r1.metric(t("Notificaciones del fármaco", "Reports for this drug"),
+                      f"{reportes:,}")
+            r2.metric(t("Efectos distintos", "Distinct effects"),
+                      f"{res['pt_norm'].nunique():,}")
+            r3.metric(t("Señales confirmadas", "Confirmed signals"),
+                      f"{len(confirmadas):,}")
+
+            if grafias > 1:
+                st.caption(t(f"La búsqueda ha encontrado {grafias} formas de "
+                             "escribir este fármaco en la base de datos y las "
+                             "agrupa todas.",
+                             f"The search found {grafias} spellings of this drug "
+                             "in the database and groups them all."))
+
+            if not len(confirmadas):
+                st.info(t("Se han encontrado notificaciones, pero ninguna "
+                          "combinación supera los criterios de señal con "
+                          "respaldo suficiente.",
+                          "Reports found, but no combination passes the signal "
+                          "criteria with enough support."))
+            else:
+                # Agrupo por reacción sumando casos y quedándome con el PRR más
+                # alto, igual que hago en la vista Explorar.
+                agg = confirmadas.groupby("pt_norm").agg(
+                    casos=("casos", "sum"), veces=("prr", "max")).reset_index()
+                top = agg.sort_values("veces", ascending=False).head(12)
+                top["pt_disp"] = tr_terms(top["pt_norm"])
+
+                st.markdown("##### " + t("Efectos que más se desvían de lo esperado",
+                                         "Effects deviating most from expected"))
+                fig = px.bar(top.sort_values("veces"), x="veces", y="pt_disp",
+                             orientation="h",
+                             labels={"veces": t("Veces más de lo esperado",
+                                                "× more than expected"),
+                                     "pt_disp": ""},
+                             custom_data=["casos"])
+                fig.update_traces(
+                    marker_color=BLUE,
+                    hovertemplate="<b>%{y}</b><br>×%{x:.1f} "
+                                  + t("más de lo esperado", "more than expected")
+                                  + "<br>%{customdata[0]:,} "
+                                  + t("notificaciones", "reports") + "<extra></extra>")
+                mostrar(eje_paises_grande(estilo_plotly(fig, 460)), key="ini_busca")
+                st.caption(t("Solo se muestran efectos que superan los criterios "
+                             "estadísticos de señal y con al menos 20 casos "
+                             "detrás. El número de veces compara la frecuencia "
+                             "del efecto en este fármaco frente al resto de la "
+                             "base de datos.",
+                             "Only effects passing the statistical signal criteria "
+                             "with at least 20 cases are shown."))
+                boton_csv(top[["pt_norm", "casos", "veces"]],
+                          f"pharmasignal_{q.strip().lower()}.csv")
+
+    st.divider()
 
     # Ahora en formato destacado, para que nadie salga
     # de la portada pensando que esto prueba causalidad.
@@ -655,6 +810,7 @@ def vista_explorar(fam_id):
         fig.update_traces(line_color=BLUE, fillcolor="rgba(79,155,232,0.25)")
         mostrar(estilo_plotly(fig, 360), key="expl_serie")
 
+
 # ZONA 3 — ANÁLISIS TÉCNICO
 def panel_senales():
     st.subheader(t("Señales", "Signals"))
@@ -717,62 +873,43 @@ def panel_senales():
 
     # La columna por la que ordeno depende del selectbox de arriba.
     col_orden = "casos_reales" if orden.startswith(("Respaldo", "Support")) else "prr"
-    st.markdown("")
-    g1, g2 = st.columns(2, gap="large")
-    with g1:
-        # Ranking Top 15. Construyo una etiqueta "fármaco - reacción" recortada
-        # para que quepa en el eje sin desbordarse.
-        st.markdown("##### " + t("Top 15", "Top 15"))
-        top = df.nlargest(15, col_orden).copy()
-        top["etiqueta"] = (top["drugname_norm"].str.slice(0, 16) + " · "
-                           + tr_terms(top["pt_norm"]).str.slice(0, 22))
-        etq = t("Casos", "Cases") if col_orden == "casos_reales" else "PRR"
-        fig = px.bar(top.sort_values(col_orden), x=col_orden, y="etiqueta",
-                     orientation="h", labels={col_orden: etq, "etiqueta": ""})
-        fig.update_traces(marker_color=BLUE)
-        mostrar(estilo_plotly(fig, 440), key="tec_top")
-    with g2:
-        # Mapa de densidad PRR vs casos. Son decenas de miles de puntos, una
-        # nube normal sería ilegible, así que uso un heatmap. Paso ambos ejes
-        # a log (por eso las etiquetas van a mano abajo) para poder leer la
-        # distribución, que si no se amontona toda en la esquina.
-        st.markdown("##### " + t("Densidad de señales (PRR frente a casos)",
-                                 "Signal density (PRR vs cases)"))
-        sc = df[(df["prr"] > 0) & (df["casos_reales"] > 0)].copy()
-        sc["lx"] = np.log10(sc["casos_reales"])
-        sc["ly"] = np.log10(sc["prr"])
-        fig = px.density_heatmap(
-            sc, x="lx", y="ly", nbinsx=34, nbinsy=34,
-            color_continuous_scale=["#11151d", BLUE_SOFT, BLUE, "#9EC9F0"],
-            labels={"lx": t("Casos", "Cases"), "ly": "PRR"})
-        fig = estilo_plotly(fig, 440)
-        # Devuelvo las marcas de los ejes a la escala real (1, 10, 100…) aunque
-        # por dentro esté en log.
-        fig.update_xaxes(tickvals=[0, 1, 2, 3, 4, 5],
-                         ticktext=["1", "10", "100", "1K", "10K", "100K"])
-        fig.update_yaxes(tickvals=[0, 1, 2, 3], ticktext=["1", "10", "100", "1K"])
-        mostrar(fig, key="tec_dens")
-        st.caption(t("Zonas claras = mayor concentración de señales.",
-                     "Lighter areas = higher concentration of signals."))
-
-    # Tabla de detalle con todas las métricas (PRR, ROR, IC95, chi²) y su CSV.
     st.divider()
-    st.markdown("##### " + t("Detalle de señales", "Signal detail"))
-    df = df.copy()
-    df["reac_disp"] = tr_terms(df["pt_norm"])
-    tabla = df.sort_values(col_orden, ascending=False)[[
+
+    # Ranking Top 15. Construyo una etiqueta "fármaco - reacción" recortada
+    # para que quepa en el eje sin desbordarse.
+    st.markdown("##### " + t("Top 15", "Top 15"))
+    top = df.nlargest(15, col_orden).copy()
+    top["etiqueta"] = (top["drugname_norm"].str.slice(0, 16) + " · "
+                       + tr_terms(top["pt_norm"]).str.slice(0, 22))
+    etq = t("Casos", "Cases") if col_orden == "casos_reales" else "PRR"
+    fig = px.bar(top.sort_values(col_orden), x=col_orden, y="etiqueta",
+                 orientation="h", labels={col_orden: etq, "etiqueta": ""})
+    fig.update_traces(marker_color=BLUE)
+    mostrar(eje_paises_grande(estilo_plotly(fig, 460)), key="tec_top")
+
+    # Descarga de los datos que cumplen los filtros. La tabla de detalle que
+    # había aquí se quitó porque repetía en formato numérico lo que ya muestra
+    # el ranking, pero la exportación sí interesa conservarla: es la única vía
+    # para llevarse los resultados completos de esta vista.
+    exporta = df.copy()
+    exporta["reac_disp"] = tr_terms(exporta["pt_norm"])
+    exporta = exporta.sort_values(col_orden, ascending=False)[[
         "drugname_norm", "reac_disp", "casos_reales", "prr", "ror",
         "ror_ic_inf", "ror_ic_sup", "chi2"]].rename(columns={
         "drugname_norm": t("Fármaco", "Drug"), "reac_disp": t("Reacción", "Reaction"),
         "casos_reales": t("Casos", "Cases"), "prr": "PRR", "ror": "ROR",
         "ror_ic_inf": t("IC95 inf.", "95%CI low"),
         "ror_ic_sup": t("IC95 sup.", "95%CI high"), "chi2": "Chi²"})
-    # Redondeo a 2 decimales solo las columnas numéricas de métricas.
     for c in ["PRR", "ROR", t("IC95 inf.", "95%CI low"),
               t("IC95 sup.", "95%CI high"), "Chi²"]:
-        tabla[c] = tabla[c].round(2)
-    st.dataframe(tabla, use_container_width=True, height=440, hide_index=True)
-    boton_csv(tabla, "pharmasignal_senales.csv")
+        exporta[c] = exporta[c].round(2)
+    boton_csv(exporta, "pharmasignal_senales.csv")
+    st.caption(t(f"La descarga incluye las {len(exporta):,} combinaciones que "
+                 "cumplen los filtros, con PRR, ROR, intervalo de confianza y "
+                 "chi cuadrado.",
+                 f"The download includes the {len(exporta):,} combinations "
+                 "matching the filters, with PRR, ROR, confidence interval and "
+                 "chi-square."))
 
 
 def panel_geografico():
@@ -785,28 +922,45 @@ def panel_geografico():
         aviso_tabla("geo_perfil_paises", "analisis_geografico.py")
         return
 
-    # Métricas de concentración. El HHI (índice de Herfindahl) es la suma de las
-    # cuotas al cuadrado: cerca de 1 = muy concentrado en pocos países, cerca de
-    # 0 = muy repartido. También saco la cuota del top-5 y el peso de España.
+    # Métricas de concentración. Saco la cuota acumulada del top-5 y el peso de
+    # España sobre el total.
+    # NOTA: aquí tenía también el índice de Herfindahl, pero lo he quitado de la
+    # interfaz. Es una medida de concentración correcta y sigue calculándose en
+    # analisis_geografico.py, pero un valor como 0,4975 no dice nada a quien no
+    # conozca el índice, y la cuota del top-5 transmite la misma idea de forma
+    # inmediata.
     total = int(perfil["reportes"].sum())
     perfil = con_nombre_pais(perfil)
-    perfil["cuota"] = perfil["reportes"] / total
-    hhi = float((perfil["cuota"] ** 2).sum())
     top5 = perfil.nlargest(5, "reportes")["reportes"].sum() / total * 100
     peso_es = (perfil.loc[perfil["reporter_country"] == "ES", "reportes"].sum()
                / total * 100)
 
-    m1, m2, m3, m4 = st.columns(4)
+    m1, m2, m3 = st.columns(3)
     m1.metric(t("Países notificadores", "Reporting countries"),
               f"{perfil['reporter_country'].nunique():,}")
-    m2.metric(t("Índice Herfindahl", "Herfindahl index"), f"{hhi:.4f}")
-    m3.metric(t("Cuota top-5", "Top-5 share"), f"{top5:.1f}%")
-    m4.metric(t("Peso de España", "Spain's share"), f"{peso_es:.2f}%")
+    m2.metric(t("Cuota top-5", "Top-5 share"), f"{top5:.1f}%")
+    m3.metric(t("Peso de España", "Spain's share"), f"{peso_es:.2f}%")
     st.divider()
 
-    st.markdown("##### " + t("Volumen de notificación por país",
-                             "Report volume by country"))
-    mostrar(fig_mapa(perfil), key="geo_mapa")
+    # Antes aquí estaba el mismo mapa de volumen que ya sale en Inicio.
+    # Lo cambio por el mapa de desenlaces mortales, que cuenta algo distinto:
+    # no dónde se notifica más, sino dónde se notifica solo lo grave.
+    # Esa diferencia es la cultura de notificación de cada país, que es
+    # justo el eje del análisis geográfico.
+    if "pct_muertes" in perfil.columns:
+        st.markdown("##### " + t("Gravedad de lo que se notifica",
+                                 "Severity of what gets reported"))
+        mostrar(fig_mapa(perfil, col="pct_muertes", log=False,
+                         escala=["#16324F", "#8B5A5A", "#E8746E"],
+                         titulo="% " + t("muertes", "deaths"),
+                         min_reportes=5000), key="geo_mapa_mort")
+        st.caption(t("Porcentaje de notificaciones con desenlace mortal, solo en "
+                     "países con al menos 5.000 reportes. Un porcentaje alto no "
+                     "indica más riesgo, sino que en ese país se notifica "
+                     "principalmente lo grave.",
+                     "Share of reports with fatal outcome, countries with 5,000+ "
+                     "reports only. A high share does not mean higher risk, but "
+                     "that mainly severe cases get reported there."))
     st.divider()
 
     c1, c2 = st.columns(2, gap="large")
@@ -933,37 +1087,13 @@ def panel_geografico():
                                 "pct_mujeres", "pct_muertes"] if c in renta.columns]
             st.dataframe(renta[cols], use_container_width=True, hide_index=True)
 
-    # Señales exclusivas de España. NOTA: esta parte tiene poca potencia (muy
-    # pocos casos por señal)
-    st.divider()
-    st.markdown("##### " + t("Señales exclusivas de España",
-                             "Spain-exclusive signals"))
-    esp = cargar("geo_senales_espana")
-    if esp is None:
-        aviso_tabla("geo_senales_espana", "analisis_geografico.py")
-    else:
-        exc = esp.copy()
-        # Me quedo con lo que es señal en España pero no a nivel global
-        if "es_senal_es" in exc and "es_senal_global" in exc:
-            exc = exc[exc["es_senal_es"] & (~exc["es_senal_global"])]
-        exc = exc.sort_values("prr_es", ascending=False).head(25)
-        if "pt_norm" in exc.columns:
-            exc["pt_norm"] = tr_terms(exc["pt_norm"])
-        colss = [c for c in ["drugname_norm", "pt_norm", "casos_es",
-                             "casos_global", "prr_es", "prr_global", "chi2_es"]
-                 if c in exc.columns]
-        tabla = exc[colss].rename(columns={
-            "drugname_norm": t("Fármaco", "Drug"),
-            "pt_norm": t("Reacción", "Reaction"),
-            "casos_es": t("Casos ES", "ES cases"),
-            "casos_global": t("Casos global", "Global cases"),
-            "prr_es": "PRR ES", "prr_global": t("PRR global", "Global PRR"),
-            "chi2_es": "Chi² ES"})
-        for c in ["PRR ES", t("PRR global", "Global PRR"), "Chi² ES"]:
-            if c in tabla:
-                tabla[c] = tabla[c].round(2)
-        st.dataframe(tabla, use_container_width=True, height=380, hide_index=True)
-        boton_csv(tabla, "pharmasignal_senales_espana.csv")
+    # NOTA: aquí estaba el bloque "Señales exclusivas de España", que he
+    # quitado. El problema era que con tan pocos casos por señal (5-20 sobre un
+    # subconjunto español de 75.609 reportes) los PRR locales salían
+    # disparatados, del orden de decenas de miles. No es un dato defendible, así
+    # que prefiero no enseñarlo y documentarlo como limitación de potencia
+    # estadística en muestras pequeñas. La tabla geo_senales_espana sigue
+    # existiendo y se puede descargar desde Crear gráfica → Conjuntos listos.
 
 
 def panel_temporal():
@@ -976,49 +1106,117 @@ def panel_temporal():
         return
     fam = fam.sort_values("trimestre")
 
+    # Catálogo de las cinco series en un único sitio. Cada entrada lleva la
+    # columna de valores absolutos, la de porcentaje, la etiqueta que se muestra
+    # y el color. Antes esto estaba repetido en cada gráfica y añadir una serie
+    # obligaba a tocar tres o cuatro bloques.
+    SERIES = [
+        ("reportes_glp1", "pct_glp1", "GLP-1", BLUE),
+        ("reportes_covid_antiviral", "pct_covid_antiviral",
+         t("COVID · antivirales", "COVID · antivirals"), NEG),
+        ("reportes_covid_repurposed", "pct_covid_repurposed",
+         t("COVID · reutilizados", "COVID · repurposed"), "#C0894D"),
+        ("reportes_gripe", "pct_gripe", t("Gripe", "Influenza"), "#6FCF97"),
+        ("reportes_vsr", "pct_vsr", "VRS", "#B07FE8"),
+    ]
+    disponibles = [s for s in SERIES if s[0] in fam.columns]
+
+    # La familia COVID se calcula en dos series separadas (antivirales
+    # específicos y fármacos reutilizados durante la pandemia), pero en la
+    # métrica de cabecera las sumo para dar la cifra del conjunto. Lo indico en
+    # la etiqueta para que quede claro que agrupa ambas.
+    cols_covid = [c for c in ("reportes_covid_antiviral",
+                              "reportes_covid_repurposed") if c in fam.columns]
+    total_covid = int(fam[cols_covid].sum().sum()) if cols_covid else 0
+
     m1, m2, m3 = st.columns(3)
     m1.metric(t("Trimestres", "Quarters"), f"{fam['trimestre'].nunique()}")
     if "reportes_glp1" in fam:
         m2.metric(t("Reportes GLP-1", "GLP-1 reports"),
                   f"{int(fam['reportes_glp1'].sum()):,}")
-    if "reportes_covid" in fam:
-        m3.metric(t("Reportes COVID", "COVID reports"),
-                  f"{int(fam['reportes_covid'].sum()):,}")
+    if cols_covid:
+        m3.metric(t("Reportes COVID (ambas series)", "COVID reports (both series)"),
+                  f"{total_covid:,}")
     st.divider()
 
-    # Aquí uso graph_objects (go) en vez de px porque quiero superponer dos
-    # líneas (GLP-1 y COVID) con control total sobre cada traza. Con go se
-    # construye la figura vacía.
-    c1, c2 = st.columns(2, gap="large")
-    with c1:
-        st.markdown("##### " + t("Por trimestre (absolutos)",
-                                 "Per quarter (absolute)"))
-        fig = go.Figure()
-        if "reportes_glp1" in fam:
-            fig.add_trace(go.Scatter(x=fam["trimestre"], y=fam["reportes_glp1"],
-                          name="GLP-1", mode="lines+markers",
-                          line=dict(color=BLUE, width=2.5)))
-        if "reportes_covid" in fam:
-            fig.add_trace(go.Scatter(x=fam["trimestre"], y=fam["reportes_covid"],
-                          name="COVID-19", mode="lines+markers",
-                          line=dict(color=NEG, width=2.5)))
-        mostrar(estilo_plotly(fig, 420), key="temp_abs")
-    with c2:
-        # Misma idea pero en % del total: útil para comparar el peso relativo
-        # sin que GLP-1, mucho más voluminoso, aplaste a COVID.
-        st.markdown("##### " + t("Peso relativo (%)", "Relative share (%)"))
-        fig = go.Figure()
-        if "pct_glp1" in fam:
-            fig.add_trace(go.Scatter(x=fam["trimestre"], y=fam["pct_glp1"],
-                          name="GLP-1", mode="lines+markers",
-                          line=dict(color=BLUE, width=2.5)))
-        if "pct_covid" in fam:
-            fig.add_trace(go.Scatter(x=fam["trimestre"], y=fam["pct_covid"],
-                          name="COVID-19", mode="lines+markers",
-                          line=dict(color=NEG, width=2.5)))
-        fig = estilo_plotly(fig, 420)
-        fig.update_yaxes(title=t("% del total", "% of total"))
-        mostrar(fig, key="temp_pct")
+    # VISTA GENERAL EN SMALL MULTIPLES
+    # Las cinco familias tienen volúmenes muy dispares: GLP-1 llega a 32.510 en
+    # un trimestre y los fármacos reutilizados en la pandemia se mueven en torno
+    # a 200. Dibujadas juntas en un mismo eje, las cuatro pequeñas quedarían
+    # pegadas al suelo. Con una miniatura por familia, cada una tiene su propia
+    # escala y se compara la FORMA de las curvas, que es lo que interesa.
+    st.markdown("##### " + t("Evolución por familia",
+                             "Evolution by family"))
+    st.caption(t("Cada familia con su propia escala: lo que se compara es la "
+                 "forma de la curva, no el volumen. VRS es el virus "
+                 "respiratorio sincitial, principal causa de bronquiolitis en "
+                 "lactantes.",
+                 "Each family on its own scale: what is compared is the shape of "
+                 "the curve, not the volume. RSV is respiratory syncytial virus, "
+                 "the main cause of bronchiolitis in infants."))
+
+    # Reparto las miniaturas en filas de tres. La última fila suele quedar
+    # incompleta (con cinco familias son 3 + 2), así que en ese caso añado
+    # columnas vacías a los lados para que las miniaturas queden centradas en
+    # lugar de pegadas a la izquierda con un hueco a la derecha.
+    for i in range(0, len(disponibles), 3):
+        bloque = disponibles[i:i + 3]
+        if len(bloque) == 3:
+            cols = st.columns(3, gap="medium")
+        elif len(bloque) == 2:
+            # Dos columnas de relleno a los lados, con la mitad de ancho, para
+            # que las dos miniaturas queden del mismo tamaño que las de arriba.
+            _l, c1, c2, _r = st.columns([1, 2, 2, 1], gap="medium")
+            cols = [c1, c2]
+        else:
+            _l, c1, _r = st.columns([1, 2, 1], gap="medium")
+            cols = [c1]
+
+        for col, (c_abs, _c_pct, etq, color) in zip(cols, bloque):
+            with col:
+                st.markdown(f"**{etq}**")
+                fig = px.area(fam, x="trimestre", y=c_abs,
+                              labels={"trimestre": "", c_abs: ""})
+                # Plotly no tiene una función para pasar de hexadecimal a rgba,
+                # así que construyo el relleno translúcido a mano.
+                rgb = tuple(int(color.lstrip("#")[j:j + 2], 16) for j in (0, 2, 4))
+                fig.update_traces(line_color=color,
+                                  fillcolor=f"rgba({rgb[0]},{rgb[1]},{rgb[2]},0.22)")
+                fig = estilo_plotly(fig, 240)
+                # En miniatura no cabe el nombre de los 24 trimestres, así que
+                # dejo solo uno de cada cuatro (uno por año).
+                fig.update_xaxes(tickvals=fam["trimestre"].iloc[::4],
+                                 tickfont=dict(size=9))
+                fig.update_yaxes(tickfont=dict(size=9))
+                fig.update_layout(margin=dict(l=4, r=4, t=4, b=4),
+                                  showlegend=False)
+                mostrar(fig, key="sm_" + c_abs)
+                st.caption(f"{int(fam[c_abs].sum()):,} " +
+                           t("reportes", "reports"))
+    st.divider()
+
+    # COMPARACIÓN DIRECTA DE LAS DOS FAMILIAS GRANDES
+    # Solo enfrento GLP-1 y antivirales COVID porque son las únicas dos series
+    # con volúmenes del mismo orden de magnitud. Las otras tres se ven en las
+    # miniaturas de arriba, cada una con su escala.
+    # Aquí había además un gráfico de peso relativo con las cinco series, pero
+    # lo quité: aun normalizando por el total, GLP-1 y los antivirales COVID
+    # aplastaban a las otras tres contra el eje y no se leía nada.
+    st.markdown("##### " + t("GLP-1 frente a antivirales COVID",
+                             "GLP-1 vs COVID antivirals"))
+    fig = go.Figure()
+    for c_abs, _c_pct, etq, color in disponibles:
+        if c_abs not in ("reportes_glp1", "reportes_covid_antiviral"):
+            continue
+        fig.add_trace(go.Scatter(x=fam["trimestre"], y=fam[c_abs],
+                      name=etq, mode="lines+markers",
+                      line=dict(color=color, width=2.5)))
+    mostrar(estilo_plotly(fig, 420), key="temp_abs")
+    st.caption(t("Las dos familias de mayor volumen, con dinámicas opuestas: "
+                 "los antivirales COVID caen desde 2022 mientras los GLP-1 "
+                 "crecen de forma sostenida.",
+                 "The two largest families, with opposite dynamics: COVID "
+                 "antivirals decline from 2022 while GLP-1 grow steadily."))
     st.divider()
 
     # Desglose de GLP-1 por fármaco como áreas apiladas. pivot_table pasa de
@@ -1036,17 +1234,18 @@ def panel_temporal():
         fig = px.area(piv, labels={"value": t("Reportes", "Reports"),
                                    "trimestre": "", "drugname_norm": t("Fármaco", "Drug")})
         mostrar(estilo_plotly(fig, 440), key="temp_glp1")
-    st.divider()
+        st.caption(t(f"{piv.shape[1]} fármacos de la familia GLP-1 con al menos "
+                     "un reporte en el periodo.",
+                     f"{piv.shape[1]} GLP-1 family drugs with at least one "
+                     "report in the period."))
 
-    # Hueco reservado para la Entrega 3: el Isolation Forest correrá sobre estas
-    # mismas series. Lo dejo señalizado para que se vea que la
-    # infraestructura ya está lista aunque el modelo aún no esté.
-    st.markdown("##### " + t("Detección de anomalías — Isolation Forest",
-                             "Anomaly detection — Isolation Forest"))
-    st.info(t("Previsto para la Entrega 3. Sobre estas series se aplicará un "
-              "modelo de detección de anomalías. La infraestructura ya está lista.",
-              "Planned for Deliverable 3. An anomaly-detection model will run "
-              "on these series. The data infrastructure is already in place."))
+    # NOTA: aquí estaba la vista de detección de anomalías con Isolation Forest,
+    # que he retirado. Sobre series de 24 puntos trimestrales el modelo no
+    # aportaba sobre un método elemental de puntuación z, y además señalaba un
+    # número fijo de trimestres por serie determinado por su parámetro de
+    # contaminación y no por los datos. La decisión y su justificación quedan
+    # documentadas en la memoria como línea de trabajo futuro: el enfoque
+    # requeriría series más largas o granularidad mensual para ser útil.
 
 
 # ZONA 4 — CREAR GRÁFICA
