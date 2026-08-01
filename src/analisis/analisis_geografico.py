@@ -49,6 +49,12 @@ from pyspark.sql.functions import (
 from delta import configure_spark_with_delta_pip
 import os
 
+# La lista de fármacos GLP-1 vive ahora en familias.py, que es la fuente única
+# para todos los módulos de análisis. Antes estaba duplicada aquí y en
+# analisis_temporal.py, con el riesgo de tocar una y olvidar la otra, y de que
+# las cifras geográficas y temporales dejaran de ser comparables entre sí.
+from familias import GLP1
+
 # Construcción de la sesión Spark mediante soporte de Delta Lake.
 # local[*] usa todos los núcleos disponibles en el equipo desde el que se ejecuta
 # sin necesitar un cluster externo.
@@ -92,17 +98,6 @@ RENTA_MEDIA = [
     "CN", "BR", "IN", "MX", "RU", "TR", "AR", "TH", "ZA", "CO",
     "MY", "ID", "PH", "VN", "EG", "PE", "CL", "RO", "BG", "UA",
     "MA", "DZ", "TN", "JO", "LB", "EC", "DO", "GT", "PY", "BO",
-]
-
-# Fármacos de la familia GLP-1. Eje clave en el periodo analizado.
-# Se incluyen tanto los principios activos como podrían ser (semaglutide, tirzepatide...)
-# como sus nombres comerciales (ozempic, mounjaro, etc) porque tras la normalización de
-# drugname ambos coexisten en los datos y hay que capturar todas las formas.
-GLP1 = [
-    "semaglutide", "ozempic", "wegovy", "rybelsus",
-    "tirzepatide", "mounjaro", "zepbound",
-    "liraglutide", "saxenda", "victoza",
-    "dulaglutide", "trulicity", "exenatide",
 ]
 
 print("\nCargando datos curados...")
@@ -182,9 +177,9 @@ reac_pt = reac.select("primaryid", "pt_norm").distinct().cache()
 # Objetivo: caracterizar cada país notificador según el volúmen, demografía y gravedad de los reportes.
 # La proporción de desenlaces mortales sobre el total de reportes de un país es un indicador indirecto
 # de su cultura de notificación.
-print("\n" + "=" * 78)
+print("\n")
 print("ANÁLISIS 1 — PERFIL DE NOTIFICACIÓN POR PAÍS")
-print("=" * 78)
+print("\n")
 
 # Agregación por país. Para cada país calculamos:
 # - reportes: número de reportes únicos.
@@ -253,9 +248,9 @@ perfil_pais.filter(col("reportes") >= 5000) \
 # Objetivo: identificar que fármacos y que reacciones se notifican en España con una
 # frecuencia relativa distinta a la esperada según el patrón mundial.
 # Parte diferencial del proyecto.
-print("\n" + "=" * 78)
+print("\n")
 print("ANÁLISIS 2 — DIVERGENCIA DE ESPAÑA FRENTE AL PATRÓN GLOBAL")
-print("=" * 78)
+print("\n")
 
 # Subconjunto de reportes españoles y conjunto global. Ambos se cachean
 # porque se usan repetidamente en las funciones de divergencia
@@ -382,9 +377,9 @@ divergencia_reacciones.filter(col("significativo")) \
 # únicamente los reportes españoles, y contrastar el resultado con el PRR global
 # calculado en prr_ror.py. Este es el núcle de la parte geográfica, demostrar que existen
 # señales que solo emergen al desagregar por país.
-print("\n" + "=" * 78)
+print("\n")
 print("ANÁLISIS 3 — SEÑALES PRR EN ESPAÑA FRENTE AL PRR GLOBAL")
-print("=" * 78)
+print("\n")
 
 # Construimos los pares fármaco-reacción del subconjunto español
 # Un par representa la coincidencia de un fármaco sospechoso primario y una
@@ -531,9 +526,9 @@ comparativa.filter(
 # Análisis 4. Comparativa por nivel de renta
 # Objetivo: evaluar si el perfil de notificación (gravedad, demografía y tipo de reaccciones)
 # difiere entre países de renta alta y media, usando la clasificación del Banco Mundial que hemos definido al comienzo.
-print("\n" + "=" * 78)
+print("\n")
 print("ANÁLISIS 4 — COMPARATIVA POR NIVEL DE RENTA (BANCO MUNDIAL)")
-print("=" * 78)
+print("\n")
 
 # Etiquetamos cada reporte con el nivel de renta de su país notificador.
 # Los países fuera de las dos listas quedan como NO_CLASIFICADO.
@@ -589,9 +584,9 @@ reac_pt.join(ids_media, on="primaryid", how="inner") \
 # Análisis 5. Fármacos GLP-1 por país
 # Objetivo: caracterizar la distribución geográfica de los fármacos GLP-1,
 # otra de las partes claves del periodo trabajado, y sus reacciones asociadas en España
-print("\n" + "=" * 78)
+print("\n")
 print("ANÁLISIS 5 — DISTRIBUCIÓN GEOGRÁFICA DE LOS FÁRMACOS GLP-1")
-print("=" * 78)
+print("\n")
 
 # Reportes que tienen algún fármaco GLP-1 como sospechoso primario.
 glp1_reportes = drug_ps.filter(col("drugname_norm").isin(GLP1)) \
@@ -632,9 +627,9 @@ pares_glp1_es.show(15, truncate=False)
 # Análisis 6. Evolución temporal del peso de España
 # Objetivo: mostrar cómo evoluciona la proporción de reportes españoles sobre el total
 # trimestre a trimestre. Sirve además para visualizar el efecto de la recodificación ES -> EU.
-print("\n" + "=" * 78)
+print("\n")
 print("ANÁLISIS 6 — EVOLUCIÓN TRIMESTRAL DEL PESO DE ESPAÑA")
-print("=" * 78)
+print("\n")
 
 # Total de reportes por trimestre (todos los países)
 por_trimestre = demo_geo.groupBy("trimestre").agg(
@@ -664,9 +659,9 @@ evolucion_es.select("trimestre", "reportes_es", "total_trimestre",
 # Análisis 7. Concentración geográfica de la notificación
 # Objetivo: cuantificar hasta que punto el sistema FAERS depende de un número reducido de países,
 # mediante el índice Herfindahl-Hirschman (HHI).
-print("\n" + "=" * 78)
+print("\n")
 print("ANÁLISIS 7 — CONCENTRACIÓN GEOGRÁFICA DE LA NOTIFICACIÓN")
-print("=" * 78)
+print("\n")
 
 # El índice de Herfindahl-Hirschman mide la concentración de un sistema.
 # Se calcula como la suma de los cuadrados de las cuotas de mercado
@@ -707,9 +702,9 @@ print("\nUn HHI elevado indica que el sistema FAERS depende de forma "
 # Persistencia de resultados
 # Cada tabla de resultados se materializa en Delta Lake para que el frontend Streamlit posteriormente
 # pueda consumirlas sin recalcular el análisis de cada carga.
-print("\n" + "=" * 78)
+print("\n")
 print("GUARDANDO RESULTADOS EN DELTA LAKE")
-print("=" * 78)
+print("\n")
 
 # Diccionario nombre_tabla -> DataFrame. Se recorre escribiendo cada resultado
 # en su ruta correspondiente con modo overwrite (reejecutable) y overwriteSchema
@@ -733,38 +728,3 @@ for nombre, df in salidas.items():
 print("\nAnálisis geográfico completado.")
 
 spark.stop()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
