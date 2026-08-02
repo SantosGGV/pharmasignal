@@ -1,0 +1,43 @@
+name: Pruebas unitarias
+
+# El flujo se dispara en cada incorporación de código a la rama principal y en
+# cada propuesta de cambio, de modo que una modificación no puede introducir
+# una regresión en el cálculo estadístico sin ser detectada.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pruebas:
+    name: Verificación de las expresiones estadísticas
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Obtener el código
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Las pruebas operan sobre DataFrames de Spark, que se ejecuta sobre una
+      # máquina virtual de Java.
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Solo se instalan las dependencias necesarias para ejecutar las pruebas,
+      # no el entorno completo del proyecto: el flujo verifica las expresiones
+      # estadísticas, no el pipeline de datos.
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pyspark==4.1.1
+
+      - name: Ejecutar las pruebas
+        run: pytest tests/ -v
