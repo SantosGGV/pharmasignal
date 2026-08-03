@@ -1,0 +1,7 @@
+data/raw
+data/curated
+outputs
+.venv
+.git
+__pycache__
+*.pyc
