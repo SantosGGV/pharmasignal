@@ -32,10 +32,19 @@ COPY .streamlit/ /app/.streamlit/
 # Datos de demostracion. El archivo se genera con docker/preparar_demo.sh y
 # contiene las tablas de resultados necesarias para que la interfaz muestre
 # contenido sin ejecutar previamente el pipeline.
-COPY docker/pharmasignal-datos-demo.tar.gz /tmp/
-RUN mkdir -p /root/pharmasignal && \
-    tar xzf /tmp/pharmasignal-datos-demo.tar.gz -C /root/pharmasignal && \
-    rm /tmp/pharmasignal-datos-demo.tar.gz
+# El paquete se descarga desde el repositorio en lugar de copiarse del contexto
+# de construccion. De este modo la imagen puede construirse a partir de un clon
+# del repositorio, sin necesidad de haber ejecutado antes el pipeline para
+# generar las tablas.
+ARG URL_DATOS=https://github.com/SantosGGV/pharmasignal/releases/download/datos-demo/pharmasignal-datos-demo.tar.gz
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /root/pharmasignal && \
+    curl -fsSL "$URL_DATOS" -o /tmp/datos.tar.gz && \
+    tar xzf /tmp/datos.tar.gz -C /root/pharmasignal && \
+    rm /tmp/datos.tar.gz && \
+    apt-get purge -y curl && apt-get autoremove -y
 
 EXPOSE 8501
 
