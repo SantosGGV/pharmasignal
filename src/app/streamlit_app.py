@@ -351,7 +351,7 @@ def mostrar(fig, key=None):
     # Envoltorio para no repetir siempre los mismos parámetros de plotly_chart.
     # El 'key' es un identificador único que Streamlit exige cuando hay varias
     # gráficas, si dos comparten key, la herramienta se lía. Por eso voy pasando keys distintas.
-    st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG, key=key)
+    st.plotly_chart(fig, width='stretch', config=PLOTLY_CONFIG, key=key)
 
 
 def boton_csv(df, nombre):
@@ -523,7 +523,7 @@ def _item(cont, label, z, s=None):
     # así resaltarlo.
     activo = (z, s) == (zona, sub)
     if cont.button(("●  " if activo else "◦  ") + label,
-                   use_container_width=True,
+                   width='stretch',
                    type="primary" if activo else "secondary",
                    key=f"nav_{z}_{s}"):
         # Si lo pulsan, actualizo el estado y fuerzo un rerun para repintar ya
@@ -631,7 +631,7 @@ def vista_inicio():
     ejemplos = ["ozempic", "ibuprofen", "omeprazole", "paracetamol", "metformin"]
     cols_ej = st.columns(len(ejemplos))
     for c, ej in zip(cols_ej, ejemplos):
-        if c.button(ej.capitalize(), use_container_width=True, key="ej_" + ej):
+        if c.button(ej.capitalize(), width='stretch', key="ej_" + ej):
             st.session_state["q_farmaco"] = ej
 
     with caja:
@@ -790,7 +790,7 @@ def vista_explorar(fam_id):
                        t("Se notifica", "Reported")]].rename(columns={
             "pt_disp": t("Efecto adverso", "Adverse effect"),
             "casos": t("Notificaciones", "Reports")})
-        st.dataframe(tabla, use_container_width=True, hide_index=True)
+        st.dataframe(tabla, width='stretch', hide_index=True)
         st.caption(t("«Veces más de lo esperado» compara la frecuencia del efecto "
                      "en esta familia frente al resto de la base.",
                      "'× more than expected' compares the effect's frequency in "
@@ -1085,7 +1085,7 @@ def panel_geografico():
             # todas (defensivo ante cambios en el pipeline).
             cols = [c for c in ["nivel_renta", "reportes", "edad_media",
                                 "pct_mujeres", "pct_muertes"] if c in renta.columns]
-            st.dataframe(renta[cols], use_container_width=True, hide_index=True)
+            st.dataframe(renta[cols], width='stretch', hide_index=True)
 
     # NOTA: aquí estaba el bloque "Señales exclusivas de España", que he
     # quitado. El problema era que con tan pocos casos por señal (5-20 sobre un
@@ -1437,7 +1437,7 @@ def crear_listos():
     grafica_auto(df, "listos_auto")
     n = st.slider(t("Filas a previsualizar", "Rows to preview"),
                   10, min(1000, len(df)), min(100, len(df)), 10)
-    st.dataframe(df.head(n), use_container_width=True, height=380)
+    st.dataframe(df.head(n), width='stretch', height=380)
     boton_csv(df, f"pharmasignal_{etq}.csv")
 
 
@@ -1455,7 +1455,7 @@ def crear_constructor():
     constructor(df, etq, "cst_")
 
 
-# ENRUTADO
+# Enrutado
 # Según la zona guardada en session_state, llamo a la
 # función de la vista correspondiente. Esto se ejecuta en cada rerun, después de
 # haber definido todas las funciones de arriba, así que aquí es donde de verdad
