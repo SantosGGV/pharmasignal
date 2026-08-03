@@ -38,18 +38,21 @@ procesamiento se apoya en Spark.
 ### Interfaz en contenedor
 
 ```bash
-# Requiere haber generado previamente el paquete de datos de demostración
-./docker/preparar_demo.sh
-
 docker build -f docker/Dockerfile -t pharmasignal:1.0 .
 docker run --rm -p 8501:8501 pharmasignal:1.0
 ```
 
 La interfaz queda accesible en `http://localhost:8501`.
 
-La imagen contiene únicamente la capa de presentación y las tablas de resultados
-necesarias para que la interfaz muestre contenido. El pipeline de ingesta y análisis
-no forma parte del contenedor: requiere Spark y varios gigabytes de datos de origen.
+La imagen contiene únicamente la capa de presentación. Durante la construcción se
+descargan las tablas de resultados publicadas como recurso adjunto del repositorio,
+de modo que no es necesario disponer de los ficheros de origen ni haber ejecutado
+previamente el pipeline. El procesamiento de datos queda fuera del contenedor porque
+requiere Spark y varios gigabytes de datos.
+
+El script `docker/preparar_demo.sh` regenera ese paquete a partir de las tablas
+curadas locales, y solo resulta necesario si se quiere publicar una versión
+actualizada de los datos de demostración.
 
 ### Instalación local y pipeline completo
 
