@@ -24,6 +24,22 @@ TABLAS=(
   serie_temporal_familias
   serie_temporal_glp1_farmacos
   trad_terminos
+  # Tablas del explorador. Las dos primeras son los catálogos de entidades que
+  # alimentan el buscador; el resto resuelve cada combinación del constructor.
+  expl_catalogo_farmacos
+  expl_catalogo_reacciones
+  expl_farmaco_trimestre
+  expl_farmaco_pais
+  expl_farmaco_indicacion
+  expl_farmaco_gravedad
+  expl_reaccion_trimestre
+  expl_reaccion_pais
+  expl_farmaco_reaccion_trimestre
+  expl_farmaco_reaccion_pais
+  expl_reaccion_farmaco_trimestre
+  expl_reaccion_farmaco_pais
+  expl_farmaco_indicacion_trimestre
+  expl_farmaco_gravedad_trimestre
 )
 
 cd "$BASE"
