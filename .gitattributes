@@ -1,0 +1,8 @@
+# Normaliza los finales de línea al incorporar código al repositorio, de modo
+# que la edición desde un entorno Windows no introduzca retornos de carro en
+# ficheros que se ejecutan en Linux. Un flujo de trabajo o un script con
+# terminadores CRLF no llega a ejecutarse en el sistema de destino.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gz binary
