@@ -1,46 +1,46 @@
 """
 streamlit_app.py
 
-Se trata del Frontend de PharmaSignal.
+Frontend de PharmaSignal.
 
-Navegación en acordeón (sección → subapartados)
+Navegación ordenada en sección - subapartados)
 Bilingüe ES/EN.
 Datos de país y traducción de términos se cargan desde ficheros externos
 en data/diccionarios/ (paises.txt, terminos_es.txt), sin nada incrustado en el
 código.
 Los resultados se leen desde Delta Lake.
-
-Ejecución:  streamlit run src/app/streamlit_app.py
 """
-
 # NOTA SOBRE STREAMLIT (importante para entender como funciona el código):
 # Streamlit no funciona como una web normal. Cada vez que se toca un
 # botón, un slider o cambias de idioma, vuelve a ejecutar este fichero entero, de
 # arriba a abajo, como si lo lanzaras de cero. Por eso hay que tener cuidado con
-# releer datos pesados (de ahí el caché).
+# releer datos pesados de ahí el cacheo constante.
 
 import os
 
 import numpy as np
 import pandas as pd
 import plotly.express as px          # px = atajos rápidos para gráficas típicas
-import plotly.graph_objects as go    # go = control fino cuando px se queda corto
+import plotly.graph_objects as go    # go = para cuando px se queda corto
 import streamlit as st
 from deltalake import DeltaTable     # lee tablas Delta sin necesidad de Spark
 
+# Capa de acceso a datos del constructor. Concentra la correspondencia entre lo
+# que pide el usuario y la tabla precalculada que lo resuelve, de modo que aquí
+# solo queda la representación.
+import consultas_explorador as ce
+
 # CONFIGURACIÓN GLOBAL
-# expanduser convierte el "~" en la ruta real del home, así funciona sin tocar
-# nada aunque cambie el usuario de la máquina.
+# Se usa "~" para generar rutas globales independientemente desde el usuario que se ejecute
 CURATED = os.path.expanduser("~/pharmasignal/data/curated")
 DICC_DIR = os.path.expanduser("~/pharmasignal/data/diccionarios")
 
-# Paleta de la app en un único sitio: si algún día quiero cambiar el azul, lo
-# cambio aquí.
+# Paleta de colores de la app
 BLUE = "#4F9BE8"
 NAVY = "#2E75B6"
 BLUE_SOFT = "#2E5E8C"
-INK = "#E6EAF0"        # color del texto principal (casi blanco)
-SOFT = "#8A97A8"       # texto secundario, gris apagado
+INK = "#E6EAF0"        # color del texto principal
+SOFT = "#8A97A8"       # texto secundario
 GRID = "#262D3A"       # líneas de la rejilla de las gráficas
 POS = "#4F9BE8"        # azul para "a favor" / sobrerrepresentado
 NEG = "#E8746E"        # rojo para "en contra" / infrarrepresentado
@@ -48,8 +48,7 @@ BG = "#0E1117"         # fondo oscuro
 COLORWAY = ["#4F9BE8", "#E8746E", "#7FB3E8", "#2E75B6", "#9EC9F0",
             "#C0894D", "#6FCF97", "#B07FE8"]   # ciclo de colores para series
 
-# set_page_config TIENE que ser lo primero de Streamlit que se ejecuta, si no,
-# protesta. layout="wide" usa todo el ancho; el sidebar arranca abierto.
+# set_page_config tiene que ser lo primero de Streamlit que se ejecuta
 st.set_page_config(page_title="PharmaSignal", page_icon="📈",
                    layout="wide", initial_sidebar_state="expanded")
 
@@ -113,6 +112,10 @@ st.markdown(
         .intro { color:#9AA7B6; font-size:0.9rem; border-left:3px solid #2E75B6;
                  padding:7px 0 7px 12px; margin:0 0 16px 0;
                  background:rgba(46,117,182,0.06); border-radius:0 8px 8px 0; }
+        .frase { font-size:1.15rem; line-height:1.9; color:#8A97A8;
+                 margin:6px 0 16px 0; }
+        .frase b { color:#4F9BE8; font-weight:600;
+                   border-bottom:1px dashed #2E5E8C; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -135,22 +138,13 @@ PLOTLY_CONFIG = {
 FAMILIAS = {
     "glp1": {"label": "GLP-1 (Ozempic, Wegovy, Mounjaro…)",
              "serie": "reportes_glp1",
-             # Añado byetta, bydureon y lixisenatida: son marcas de principios
-             # activos que ya estaban en la lista pero cuyos nombres comerciales
-             # faltaban, así que se perdían unos 10.900 reportes.
+
              "drugs": ["semaglutide", "ozempic", "wegovy", "rybelsus",
                        "tirzepatide", "mounjaro", "zepbound", "liraglutide",
                        "saxenda", "victoza", "dulaglutide", "trulicity",
                        "exenatide", "byetta", "bydureon", "bydureon bcise",
                        "lixisenatide", "lyxumia", "adlyxin"]},
-    # OJO, cambio importante: he sacado hydroxychloroquine de aquí.
-    # No es un fármaco COVID: es un antipalúdico cuya indicación principal es
-    # lupus y artritis reumatoide, con un volumen constante en los 24 trimestres.
-    # Al mezclarlo con los antivirales, el gráfico de efectos salía lleno de
-    # síntomas de lupus y de la propia enfermedad.
-    # Añado también los anticuerpos monoclonales, que sí son exclusivos de COVID.
-    # Las grafías con "?" son un artefacto de exportación de la FDA en cuatro
-    # trimestres de 2020-2021, por eso hay que poner las dos formas.
+
     "covid": {"label": "COVID-19 (Paxlovid, Remdesivir…)",
               "serie": "reportes_covid_antiviral",
               "drugs": ["paxlovid", "nirmatrelvir", "nirmatrelvir\\ritonavir",
@@ -164,8 +158,7 @@ FAMILIAS = {
              "drugs": ["finasteride", "propecia", "proscar"]},
 }
 
-# Códigos de desenlace de FAERS traducidos. Es un conjunto pequeño y cerrado, no
-# hace falta sacarlo a fichero externo como los otros diccionarios.
+# Códigos de desenlace de FAERS traducidos.
 OUTC_ES = {"DE": "Muerte", "LT": "Riesgo vital", "HO": "Hospitalización",
            "DS": "Discapacidad", "CA": "Anomalía congénita",
            "RI": "Intervención requerida", "OT": "Otro"}
@@ -180,7 +173,7 @@ OUTC_ES = {"DE": "Muerte", "LT": "Riesgo vital", "HO": "Hospitalización",
 def cargar(tabla: str):
     ruta = f"{CURATED}/{tabla}"
     if not os.path.isdir(ruta):
-        return None                      # tabla que aún no existe → aviso luego
+        return None
     try:
         return DeltaTable(ruta).to_pandas()   # Delta → DataFrame de pandas
     except Exception:
@@ -225,7 +218,7 @@ def cargar_paises():
                 continue
             partes = [p.strip() for p in linea.split("|")]
             if len(partes) < 4:
-                continue                   # línea mal formada → la salto
+                continue
             cod, i3, es, en = partes[0], partes[1], partes[2], partes[3]
             if i3:
                 iso3[cod] = i3
@@ -378,13 +371,6 @@ def fig_mapa(perfil, col="reportes", log=True, escala=None, titulo=None,
     # Por defecto se visualizaba el nombre del país completo, con esto
     # se logra visualizar "ES" en vez de "ESPAÑA". Para algunos países
     # con nombre extenso no llegaba a visualizarse.
-    #
-    # NUEVO: le paso por parámetro qué columna quiero pintar. Antes esta función
-    # solo sabía pintar volumen de reportes y la llamaba desde dos sitios con el
-    # mismo resultado. Ahora en Inicio pinto volumen y en Geográfico pinto el
-    # porcentaje de desenlaces mortales, que cuenta algo distinto.
-    # min_reportes sirve para el mapa de mortalidad: un país con 20 reportes
-    # puede dar un 40% de muertes y no significa nada, así que lo dejo fuera.
     mapa = con_nombre_pais(perfil)
     if min_reportes:
         mapa = mapa[mapa["reportes"] >= min_reportes]
@@ -425,7 +411,7 @@ def buscar_farmaco(q: str):
     # Busca un fármaco por texto libre dentro de la tabla de señales.
     # Va cacheada por el texto buscado, así que si el usuario repite la misma
     # búsqueda no vuelve a recorrer las 868.093 filas.
-    # OJO: devuelvo los datos sin traducir a propósito. La traducción depende del
+    # Devuelvo los datos sin traducir a propósito. La traducción depende del
     # idioma, que es una variable global, y si la metiera aquí dentro la caché
     # guardaría el resultado en el idioma equivocado.
     senales = cargar("senales_prr_ror")
@@ -433,14 +419,12 @@ def buscar_farmaco(q: str):
         return None
     q = q.strip().lower()
     # contains en vez de igualdad: el mismo fármaco aparece con muchas grafías
-    # (metformin, metformin hydrochloride, metformin hcl...), y el usuario no
-    # tiene por qué saber cuál escribir.
+    # y el usuario no tiene por qué saber cuál escribir.
     # regex=False es deliberado: impide que lo que escriba el usuario se
     # interprete como una expresión regular.
     df = senales[senales["drugname_norm"].str.contains(q, na=False, regex=False)].copy()
     if not len(df):
         return df
-    # Recupero los casos reales quitando el 0.5 de Haldane-Anscombe.
     df["casos"] = (df["a"] - 0.5).round().astype(int)
     return df
 
@@ -494,8 +478,7 @@ def panel_divergencia(div, columna, etiqueta):
 
 
 # CABECERA
-# Cabecera principal de la página (logo grande + título + subtítulo), otra vez
-# con HTML a mano para tener el control del layout como mencionaba antes.
+# Cabecera principal de la página, otra vez con HTML a mano para tener el control del layout como mencionaba antes.
 st.markdown(
     f"<div style='display:flex;align-items:center;gap:14px;"
     f"margin:0.2rem 0 0.7rem 0;'>{logo_svg(42)}"
@@ -507,8 +490,7 @@ st.markdown(
     f"</span></div></div>", unsafe_allow_html=True)
 
 # NAVEGACIÓN (sección con subapartados)
-# Aquí está el corazón del "estado" que sobrevive a los reruns. Guardo en
-# session_state una tupla (zona, subapartado) que dice dónde está el usuario.
+# Guardo en session_state una tupla (zona, subapartado) que dice dónde está el usuario.
 # La primera vez que se abre la app, la inicializo en Inicio.
 if "nav" not in st.session_state:
     st.session_state["nav"] = ("inicio", None)
@@ -555,7 +537,7 @@ _item(_exp_c, t("Conjuntos listos", "Ready-made sets"), "crear", "listos")
 _item(_exp_c, t("Constructor", "Builder"), "crear", "constructor")
 
 st.sidebar.divider()
-# IMPORTANTE fijo abajo del menú, es el mensaje defensivo del proyecto, señal
+# Fijo abajo del menú, es el mensaje defensivo del proyecto, señal
 # estadística no es lo mismo que causalidad. Que esté siempre visible.
 st.sidebar.caption(t("Una señal estadística es una hipótesis de trabajo, no una "
                      "prueba de causalidad.",
@@ -565,14 +547,14 @@ st.sidebar.caption(t("Una señal estadística es una hipótesis de trabajo, no u
 
 # ZONA 1 — INICIO
 # A partir de aquí cada zona es una función. No se ejecutan al definirse, abajo
-# del todo, según la 'zona' guardada en session_state, llamo a la que toque.
+# del todo, según la zona guardada en session_state, llamo a la que toque.
 def vista_inicio():
     senales = cargar("senales_prr_ror")
     perfil = cargar("geo_perfil_paises")
 
     # Reservo el estado del buscador antes de nada. Lo necesito porque los
     # botones de ejemplo escriben aquí, y Streamlit no deja tocar el estado de
-    # un widget una vez creado: si el text_input existiera ya, petaría al pulsar.
+    # un widget una vez creado: si el text_input existiera ya, fallaría al pulsar.
     if "q_farmaco" not in st.session_state:
         st.session_state["q_farmaco"] = ""
 
@@ -619,7 +601,7 @@ def vista_inicio():
             "Type a drug name to see which adverse effects are reported with it "
             "more often than expected."))
 
-    # Truco de orden: reservo el hueco del input, pinto los botones (que
+    # Reservo el hueco del input, pinto los botones (que
     # escriben en session_state) y creo el input al final. Si el text_input
     # existiera antes que los botones, Streamlit lanzaría excepción al pulsarlos.
     caja = st.container()
@@ -659,8 +641,7 @@ def vista_inicio():
                          f"No reports found for «{q}». Names appear as in FAERS, "
                          "usually in English or as a brand name."))
         else:
-            # Cuántas grafías distintas ha capturado la búsqueda. Lo enseño por
-            # transparencia: "metformin" trae 279 variantes y eso hay que decirlo.
+            # Cuántas grafías distintas ha capturado la búsqueda.
             grafias = res["drugname_norm"].nunique()
             # a+b es el total de reportes que mencionan ese fármaco, y es
             # constante dentro de cada grafía. Por eso agrupo primero y luego
@@ -728,8 +709,6 @@ def vista_inicio():
 
     st.divider()
 
-    # Ahora en formato destacado, para que nadie salga
-    # de la portada pensando que esto prueba causalidad.
     st.info(t("**Importante:** que un efecto se notifique junto a un fármaco no "
               "prueba que el fármaco lo cause. Son hipótesis a investigar.",
               "**Important:** an effect being reported alongside a drug does not "
@@ -738,8 +717,8 @@ def vista_inicio():
 
 # ZONA 2 — EXPLORAR (una vista por familia)
 def vista_explorar(fam_id):
-    # Vista divulgativa de una familia. .get con "glp1" de respaldo por si llega
-    # un id raro, así nunca falla con KeyError.
+    # Vista  de una familia. .get con "glp1" de respaldo por si llega
+    # un id raro, así nunca falla.
     fam = FAMILIAS.get(fam_id, FAMILIAS["glp1"])
     st.subheader(t("Explorar", "Explore") + " · " + fam["label"])
     intro(t("Qué efectos adversos se notifican junto a esta familia con más "
@@ -752,9 +731,7 @@ def vista_explorar(fam_id):
         aviso_tabla("senales_prr_ror", "prr_ror.py")
         return
 
-    # Filtro las señales a los fármacos de esta familia. La columna 'a' es la
-    # casilla de la tabla 2x2 con la corrección de Haldane-Anscombe (+0.5), así
-    # que le resto ese 0.5 para recuperar el nº de casos real y redondeo.
+    # Filtro las señales a los fármacos de esta familia.
     sen = senales[senales["drugname_norm"].isin(fam["drugs"])].copy()
     sen["casos"] = (sen["a"] - 0.5).round().astype(int)
     # Me quedo solo con lo que es señal confirmada y con respaldo mínimo (>=20),
@@ -765,7 +742,7 @@ def vista_explorar(fam_id):
         st.info(t("No hay señales con respaldo suficiente para esta familia.",
                   "No sufficiently supported signals for this family."))
     else:
-        # Agrupo por reacción: sumo casos y me quedo con el PRR máximo como
+        # Agrupo por reacción, sumo casos y me quedo con el PRR máximo como
         # medida de "cuántas veces más de lo esperado".
         agg = sen.groupby("pt_norm").agg(
             casos=("casos", "sum"), veces=("prr", "max")).reset_index()
@@ -798,7 +775,7 @@ def vista_explorar(fam_id):
     st.divider()
 
     # Si la familia tiene serie temporal propia, pinto su evolución. Finasterida
-    # no la tiene (serie=None), así que este bloque se salta para ella.
+    # no la tiene (serie=None), así que este bloque no se añade en este caso.
     serie = fam.get("serie")
     fam_t = cargar("serie_temporal_familias")
     if serie and fam_t is not None and serie in fam_t.columns:
@@ -841,7 +818,7 @@ def panel_senales():
         qr = c6.text_input(t("Buscar reacción", "Search reaction"))
 
     # Aplico los filtros uno a uno sobre una copia. Recupero los casos reales
-    # igual que antes (quitando el 0.5 de Haldane-Anscombe).
+    # igual que antes
     df = senales.copy()
     df["casos_reales"] = (df["a"] - 0.5).round().astype(int)
     df = df[df["casos_reales"] >= min_casos]
@@ -856,7 +833,7 @@ def panel_senales():
     if qr.strip():
         df = df[df["pt_norm"].str.contains(qr.strip().lower(), na=False)]
 
-    # Métricas que reaccionan a los filtros: se recalculan en cada rerun.
+    # Métricas que reaccionan a los filtros, se recalculan en cada rerun.
     m1, m2, m3, m4 = st.columns(4)
     m1.metric(t("Combinaciones", "Combinations"), f"{len(df):,}")
     m2.metric(t("Señales confirmadas", "Confirmed signals"),
@@ -887,10 +864,7 @@ def panel_senales():
     fig.update_traces(marker_color=BLUE)
     mostrar(eje_paises_grande(estilo_plotly(fig, 460)), key="tec_top")
 
-    # Descarga de los datos que cumplen los filtros. La tabla de detalle que
-    # había aquí se quitó porque repetía en formato numérico lo que ya muestra
-    # el ranking, pero la exportación sí interesa conservarla: es la única vía
-    # para llevarse los resultados completos de esta vista.
+    # Descarga de los datos que cumplen los filtros
     exporta = df.copy()
     exporta["reac_disp"] = tr_terms(exporta["pt_norm"])
     exporta = exporta.sort_values(col_orden, ascending=False)[[
@@ -923,11 +897,7 @@ def panel_geografico():
         return
 
     # Métricas de concentración. Saco la cuota acumulada del top-5 y el peso de
-    # España sobre el total.
-    # NOTA: aquí tenía también el índice de Herfindahl, pero lo he quitado de la
-    # interfaz. Es una medida de concentración correcta y sigue calculándose en
-    # analisis_geografico.py, pero un valor como 0,4975 no dice nada a quien no
-    # conozca el índice, y la cuota del top-5 transmite la misma idea de forma
+    # España sobre el total
     # inmediata.
     total = int(perfil["reportes"].sum())
     perfil = con_nombre_pais(perfil)
@@ -942,11 +912,7 @@ def panel_geografico():
     m3.metric(t("Peso de España", "Spain's share"), f"{peso_es:.2f}%")
     st.divider()
 
-    # Antes aquí estaba el mismo mapa de volumen que ya sale en Inicio.
-    # Lo cambio por el mapa de desenlaces mortales, que cuenta algo distinto:
-    # no dónde se notifica más, sino dónde se notifica solo lo grave.
-    # Esa diferencia es la cultura de notificación de cada país, que es
-    # justo el eje del análisis geográfico.
+    # Mapa de desenlaces mortales
     if "pct_muertes" in perfil.columns:
         st.markdown("##### " + t("Gravedad de lo que se notifica",
                                  "Severity of what gets reported"))
@@ -974,9 +940,7 @@ def panel_geografico():
         mostrar(eje_paises_grande(estilo_plotly(fig, 460)), key="geo_vol")
     with c2:
         # % de desenlaces mortales por país, pero solo para países con al menos
-        # 5.000 reportes: con pocos reportes el porcentaje se dispara y engaña.
-        # Lo uso como aproximación a la cultura de notificación (unos países
-        # solo notifican lo grave, otros notifican de todo).
+        # 5.000 reportes: con pocos reportes el porcentaje se dispara y engaña
         st.markdown("##### " + t("Desenlaces mortales (≥5.000 reportes)",
                                  "Fatal outcomes (≥5,000 reports)"))
         if "pct_muertes" in perfil.columns:
@@ -1046,8 +1010,7 @@ def panel_geografico():
                          "From 2025Q3 FAERS aggregates Spain under EU: national "
                          "traceability is lost."))
 
-    # Perfil por nivel de renta. Fuerzo el orden ALTA - MEDIA - NO_CLASIFICADO con
-    # una categórica ordenada, para que las barras no salgan en orden alfabético.
+    # Perfil por nivel de renta
     st.divider()
     st.markdown("##### " + t("Perfil por nivel de renta", "Income-level profile"))
     renta = cargar("geo_perfil_renta")
@@ -1087,14 +1050,6 @@ def panel_geografico():
                                 "pct_mujeres", "pct_muertes"] if c in renta.columns]
             st.dataframe(renta[cols], width='stretch', hide_index=True)
 
-    # NOTA: aquí estaba el bloque "Señales exclusivas de España", que he
-    # quitado. El problema era que con tan pocos casos por señal (5-20 sobre un
-    # subconjunto español de 75.609 reportes) los PRR locales salían
-    # disparatados, del orden de decenas de miles. No es un dato defendible, así
-    # que prefiero no enseñarlo y documentarlo como limitación de potencia
-    # estadística en muestras pequeñas. La tabla geo_senales_espana sigue
-    # existiendo y se puede descargar desde Crear gráfica → Conjuntos listos.
-
 
 def panel_temporal():
     st.subheader(t("Temporal", "Temporal"))
@@ -1108,8 +1063,7 @@ def panel_temporal():
 
     # Catálogo de las cinco series en un único sitio. Cada entrada lleva la
     # columna de valores absolutos, la de porcentaje, la etiqueta que se muestra
-    # y el color. Antes esto estaba repetido en cada gráfica y añadir una serie
-    # obligaba a tocar tres o cuatro bloques.
+    # y el color
     SERIES = [
         ("reportes_glp1", "pct_glp1", "GLP-1", BLUE),
         ("reportes_covid_antiviral", "pct_covid_antiviral",
@@ -1123,8 +1077,7 @@ def panel_temporal():
 
     # La familia COVID se calcula en dos series separadas (antivirales
     # específicos y fármacos reutilizados durante la pandemia), pero en la
-    # métrica de cabecera las sumo para dar la cifra del conjunto. Lo indico en
-    # la etiqueta para que quede claro que agrupa ambas.
+    # métrica de cabecera las sumo para dar la cifra del conjunto
     cols_covid = [c for c in ("reportes_covid_antiviral",
                               "reportes_covid_repurposed") if c in fam.columns]
     total_covid = int(fam[cols_covid].sum().sum()) if cols_covid else 0
@@ -1139,12 +1092,7 @@ def panel_temporal():
                   f"{total_covid:,}")
     st.divider()
 
-    # VISTA GENERAL EN SMALL MULTIPLES
-    # Las cinco familias tienen volúmenes muy dispares: GLP-1 llega a 32.510 en
-    # un trimestre y los fármacos reutilizados en la pandemia se mueven en torno
-    # a 200. Dibujadas juntas en un mismo eje, las cuatro pequeñas quedarían
-    # pegadas al suelo. Con una miniatura por familia, cada una tiene su propia
-    # escala y se compara la FORMA de las curvas, que es lo que interesa.
+    # Vista general en graficos pequeños
     st.markdown("##### " + t("Evolución por familia",
                              "Evolution by family"))
     st.caption(t("Cada familia con su propia escala: lo que se compara es la "
@@ -1178,7 +1126,7 @@ def panel_temporal():
                 fig = px.area(fam, x="trimestre", y=c_abs,
                               labels={"trimestre": "", c_abs: ""})
                 # Plotly no tiene una función para pasar de hexadecimal a rgba,
-                # así que construyo el relleno translúcido a mano.
+                # así que construyo el relleno a mano.
                 rgb = tuple(int(color.lstrip("#")[j:j + 2], 16) for j in (0, 2, 4))
                 fig.update_traces(line_color=color,
                                   fillcolor=f"rgba({rgb[0]},{rgb[1]},{rgb[2]},0.22)")
@@ -1199,9 +1147,6 @@ def panel_temporal():
     # Solo enfrento GLP-1 y antivirales COVID porque son las únicas dos series
     # con volúmenes del mismo orden de magnitud. Las otras tres se ven en las
     # miniaturas de arriba, cada una con su escala.
-    # Aquí había además un gráfico de peso relativo con las cinco series, pero
-    # lo quité: aun normalizando por el total, GLP-1 y los antivirales COVID
-    # aplastaban a las otras tres contra el eje y no se leía nada.
     st.markdown("##### " + t("GLP-1 frente a antivirales COVID",
                              "GLP-1 vs COVID antivirals"))
     fig = go.Figure()
@@ -1239,15 +1184,6 @@ def panel_temporal():
                      f"{piv.shape[1]} GLP-1 family drugs with at least one "
                      "report in the period."))
 
-    # NOTA: aquí estaba la vista de detección de anomalías con Isolation Forest,
-    # que he retirado. Sobre series de 24 puntos trimestrales el modelo no
-    # aportaba sobre un método elemental de puntuación z, y además señalaba un
-    # número fijo de trimestres por serie determinado por su parámetro de
-    # contaminación y no por los datos. La decisión y su justificación quedan
-    # documentadas en la memoria como línea de trabajo futuro: el enfoque
-    # requeriría series más largas o granularidad mensual para ser útil.
-
-
 # ZONA 4 — CREAR GRÁFICA
 # Catálogo de tablas que el usuario puede elegir para graficar libremente.
 # La tupla es (nombre_es, nombre_en) para mostrar en el selector según idioma.
@@ -1263,42 +1199,6 @@ TABLAS = {
     "serie_temporal_familias": ("Series temporales (familias)", "Time series (families)"),
     "serie_temporal_glp1_farmacos": ("Series GLP-1 por fármaco", "GLP-1 series by drug"),
 }
-
-
-@st.cache_data(show_spinner=False)
-def _preparar(tabla, tipo, x, y, color, agg, topn):
-    # Prepara los datos antes de graficar: agrega, ordena.
-    # Está cacheada por argumentos: si el usuario repite la misma combinación,
-    # no recalcula. La clave de rendimiento está en los topes de más abajo, que
-    # evitan mandar cientos de miles de puntos al navegador.
-    df = cargar(tabla)
-    if df is None:
-        return None, None
-    d = df
-    gb = [x] + ([color] if color else [])   # columnas por las que agrupar
-    ycol = y
-    # Agregación (suma/media/recuento) solo tiene sentido en barras/líneas/área.
-    if agg and tipo in ("bar", "line", "area"):
-        if agg == "count":
-            d = d.groupby(gb, as_index=False).size().rename(columns={"size": "recuento"})
-            ycol = "recuento"
-        else:
-            d = d.groupby(gb, as_index=False)[y].agg(agg)
-    # Topes por tipo de gráfica para que el render sea rápido:
-    if tipo == "bar" and ycol:
-        d = d.sort_values(ycol, ascending=False).head(topn)   # solo el top-N
-    elif tipo in ("line", "area"):
-        # Si hay demasiadas categorías en el eje X, me quedo con las 400 de
-        # mayor peso para optimizar
-        if ycol and d[x].nunique() > 400:
-            top_x = d.groupby(x)[ycol].sum().nlargest(400).index
-            d = d[d[x].isin(top_x)]
-        d = d.sort_values(x)
-    elif tipo == "scatter" and len(d) > 5000:
-        d = d.sample(5000, random_state=0)
-    elif tipo == "hist" and len(d) > 50000:
-        d = d.sample(50000, random_state=0)
-    return d, ycol
 
 
 def grafica_auto(df, kp):
@@ -1333,87 +1233,6 @@ def grafica_auto(df, kp):
                   "Could not auto-generate a chart.") + f" ({e})")
 
 
-def constructor(df, tabla, kp):
-    # El constructor manual: el usuario elige tipo, ejes, color, agregación y
-    # nº máximo de elementos. Los diccionarios traducen la etiqueta visible al
-    # valor interno de Plotly/pandas.
-    tipos = {t("Barras", "Bar"): "bar", t("Líneas", "Line"): "line",
-             t("Dispersión", "Scatter"): "scatter", t("Área", "Area"): "area",
-             t("Histograma", "Histogram"): "hist"}
-    aggs = {t("Suma", "Sum"): "sum", t("Media", "Mean"): "mean",
-            t("Recuento", "Count"): "count", t("Ninguna", "None"): None}
-    cols_all = list(df.columns)
-    # Para el eje Y ofrezco solo columnas numéricas
-    num_cols = df.select_dtypes("number").columns.tolist() or cols_all
-
-    # 'kp' es un prefijo de key: como esta función se usa en varios sitios
-    c1, c2, c3 = st.columns(3)
-    tipo = tipos[c1.selectbox(t("Tipo de gráfica", "Chart type"),
-                              list(tipos), key=kp + "tipo")]
-    x = c2.selectbox(t("Eje X", "X axis"), cols_all, key=kp + "x")
-    # El histograma no lleva eje Y (cuenta frecuencias), por eso ahí y=None.
-    y = None if tipo == "hist" else c3.selectbox(
-        t("Eje Y", "Y axis"), num_cols, key=kp + "y")
-
-    c4, c5, c6 = st.columns(3)
-    color_lbl = c4.selectbox(t("Separar por color (opcional)",
-                               "Split by color (optional)"),
-                             [t("(ninguno)", "(none)")] + cols_all, key=kp + "col")
-    color = None if color_lbl in (t("(ninguno)", "(none)"),) else color_lbl
-    agg = aggs[c5.selectbox(t("Agregación", "Aggregation"), list(aggs),
-                            key=kp + "agg")]
-    topn = c6.slider(t("Máx. elementos", "Max items"), 5, 100, 20, key=kp + "topn")
-
-    # ph es el hueco para la capa de "cargando": la pinto, preparo los datos,
-    # y la vacío justo antes de mostrar el resultado.
-    ph = st.empty()
-    try:
-        overlay_cargando(ph, t("Generando gráfica…", "Building chart…"))
-        d, ycol = _preparar(tabla, tipo, x, y, color, agg, topn)
-        if d is None or not len(d):
-            ph.empty()
-            st.info(t("Sin datos para esa combinación.", "No data for that combination."))
-            return
-        seq = COLORWAY
-        # Construyo la figura según el tipo elegido.
-        if tipo == "bar":
-            fig = px.bar(d, x=x, y=ycol, color=color, barmode="group",
-                         color_discrete_sequence=seq)
-        elif tipo == "line":
-            fig = px.line(d, x=x, y=ycol, color=color, render_mode="webgl",
-                          color_discrete_sequence=seq)
-        elif tipo == "area":
-            fig = px.area(d, x=x, y=ycol, color=color, color_discrete_sequence=seq)
-        elif tipo == "scatter":
-            fig = px.scatter(d, x=x, y=ycol, color=color, opacity=0.6,
-                             render_mode="webgl", color_discrete_sequence=seq)
-        else:
-            fig = px.histogram(d, x=x, color=color, color_discrete_sequence=seq)
-        # Si no hay separación por color, fuerzo el azul original
-        if color is None:
-            if tipo == "line":
-                fig.update_traces(line_color=BLUE)
-            else:
-                fig.update_traces(marker_color=BLUE)
-        ph.empty()
-        mostrar(estilo_plotly(fig, 460), key=kp + "fig")
-        st.caption(t(f"Mostrando {len(d):,} elementos (acotado para render rápido).",
-                     f"Showing {len(d):,} items (capped for fast rendering)."))
-        # Ofrezco descarga de la gráfica (HTML) y de los datos ya filtrados (CSV).
-        cc1, cc2 = st.columns(2)
-        with cc1:
-            boton_html(fig, f"pharmasignal_{kp}.html")
-        with cc2:
-            boton_csv(d, f"pharmasignal_{kp}.csv")
-    except Exception as e:
-        # Combinaciones imposibles (p. ej. Y no numérico) caen aquí con un aviso
-        # claro en vez de romper.
-        ph.empty()
-        st.error(t("Esa combinación no es válida. Prueba otros ejes o agregación.",
-                   "That combination is not valid. Try other axes or aggregation.")
-                 + f" ({e})")
-
-
 def _selector_tabla(kp):
     # Selector de tabla reutilizable. format_func decide el texto visible
     etq = st.selectbox(t("Conjunto de datos", "Dataset"), list(TABLAS),
@@ -1441,18 +1260,391 @@ def crear_listos():
     boton_csv(df, f"pharmasignal_{etq}.csv")
 
 
-def crear_constructor():
-    # Modo avanzado: eliges tabla y te doy el constructor completo.
-    st.subheader(t("Constructor", "Builder"))
-    intro(t("Combina los datos a tu gusto: tipo, ejes, color y agregación. "
-            "Exporta en PNG (icono de cámara), CSV o HTML.",
-            "Combine the data as you like: type, axes, color and aggregation. "
-            "Export as PNG (camera icon), CSV or HTML."))
-    etq, df = _selector_tabla("constr_")
-    if df is None:
-        aviso_tabla(etq, t("el script correspondiente", "the corresponding script"))
+# Constructor de Graficas
+# Etiquetas de las piezas de la frase. Se traducen aquí y no en el módulo de
+# consultas porque el idioma es cuestión de presentación.
+QUE_OPCIONES = {
+    "efectos_adversos": ("Efectos adversos", "Adverse effects"),
+    "farmacos": ("Fármacos asociados", "Associated drugs"),
+    "indicaciones": ("Motivo de administración", "Reason for administration"),
+    "gravedad": ("Gravedad de los casos", "Case severity"),
+    "volumen": ("Volumen de notificaciones", "Report volume"),
+}
+
+DESGLOSE_OPCIONES = {
+    "total": ("el total del periodo", "the whole period"),
+    "trimestre": ("trimestre", "quarter"),
+    "pais": ("país", "country"),
+}
+
+# Consulta con la que arranca la vista. Se elige por ser reconocible y tener
+# volumen suficiente para que la primera gráfica diga algo.
+INICIAL = {"que": "efectos_adversos", "entidad": "ozempic",
+           "tipo": "farmaco", "desglose": "trimestre"}
+
+
+@st.cache_data(show_spinner=False)
+def _catalogos():
+    # Los dos catálogos completos: los 34.003 nombres de fármaco y las
+    # reacciones con su volumen. Se leen una vez y se reutilizan en cada rerun.
+    return ce.catalogo_farmacos(), ce.catalogo_reacciones()
+
+
+@st.cache_data(show_spinner=False)
+def _consulta_cacheada(que, entidad, tipo_entidad, desglose, top):
+    # La caché queda definida por las cuatro piezas de la frase, de modo que
+    # volver a una combinación ya vista es inmediato. El error se devuelve como
+    # texto en lugar de propagarse, una excepción dentro de una función cacheada
+    # invalida la entrada y obligaría a recalcular en cada rerun.
+    try:
+        return ce.consultar(que, entidad, tipo_entidad, desglose, top), None
+    except Exception as e:
+        return None, str(e)
+
+
+@st.cache_data(show_spinner=False)
+def _desproporcion(farmaco, top):
+    #Reacciones de un fármaco ordenadas por desproporción, no por frecuencia.
+    senales = cargar("senales_prr_ror")
+    if senales is None:
+        return None
+    df = senales[senales["drugname_norm"] == farmaco].copy()
+    if not len(df):
+        return df
+    df["casos"] = (df["a"] - 0.5).round().astype(int)
+    df = df[df["es_senal"] & (df["casos"] >= 20)]
+    if not len(df):
+        return df
+    agg = df.groupby("pt_norm").agg(
+        casos=("casos", "sum"), veces=("prr", "max")).reset_index()
+    return agg.nlargest(top, "veces")
+
+
+def _buscador(cat_far, cat_rea):
+    """Campo de búsqueda de la entidad sobre la que se consulta.
+
+    Se emplea un campo de texto libre y no un desplegable con el catálogo
+    completo se trata de un conjunto con más de treinta y seis mil entidades y una lista de ese tamaño
+    resulta inmanejable, además de obligar al navegador a recibirla entera.
+
+    El usuario escribe cualquier término y confirma. Si lo escrito coincide
+    exactamente con una entidad del catálogo se aplica directamente, si no, se
+    ofrecen las coincidencias parciales para elegir.
+    """
+    st.markdown("**" + t("Busca aquí el fármaco o la reacción adversa",
+                         "Search here for the drug or adverse effect") + "**")
+
+    q = st.text_input(
+        t("Búsqueda", "Search"),
+        key="cst_busqueda", label_visibility="collapsed",
+        placeholder=t("Escribe y pulsa Intro: ozempic, finasteride, hepatitis…",
+                      "Type and press Enter: ozempic, finasteride, hepatitis…"))
+
+    q = (q or "").strip().lower()
+    if len(q) < 3:
         return
-    constructor(df, etq, "cst_")
+
+    # Si lo escrito coincide con una entidad del catálogo se aplica sin pedir
+    # confirmación, obligar a elegir de una lista de un solo elemento sería un
+    # paso innecesario.
+    tipo, _, _ = ce.identificar_entidad(q, cat_far, cat_rea)
+    if tipo and q != st.session_state["cst_entidad"]:
+        st.session_state["cst_entidad"] = q
+        st.session_state["cst_tipo"] = tipo
+        st.rerun()
+    if tipo:
+        return
+
+    sugerencias = ce.sugerir(q, cat_far, cat_rea, limite=8)
+    if not sugerencias:
+        st.caption(t(f"Sin coincidencias para «{q}». Los nombres están como "
+                     "aparecen en FAERS, normalmente en inglés o con la marca "
+                     "comercial: *ibuprofen*, no *ibuprofeno*.",
+                     f"No matches for «{q}». Names appear as in FAERS, usually "
+                     "in English or as a brand name."))
+        return
+
+    # Las coincidencias se reparten en filas de cuatro para que no se compriman
+    # cuando el término es genérico y devuelve muchas.
+    st.caption(t("Coincidencias:", "Matches:"))
+    for i in range(0, len(sugerencias), 4):
+        cols = st.columns(4)
+        for col, (nombre, tipo_s, vol) in zip(cols, sugerencias[i:i + 4]):
+            if col.button(nombre[:26], width='stretch',
+                          key=f"sug_{tipo_s}_{nombre}",
+                          help=f"{vol:,} " + t("notificaciones", "reports")):
+                st.session_state["cst_entidad"] = nombre
+                st.session_state["cst_tipo"] = tipo_s
+                st.rerun()
+
+
+def _grafica_constructor(datos, desglose, que, top, modo, escala_log):
+    """Representa el resultado de una consulta del constructor.
+
+    Toda consulta devuelve el mismo esquema de columnas, lo que permite que una
+    única función cubra las trece combinaciones disponibles.
+    """
+    d = datos.copy()
+
+    # Reacciones e indicaciones se traducen. Los nombres de fármaco no, ya que son
+    # denominaciones internacionales y así los reconoce el usuario, como
+    # confirmó la evaluación con los perfiles de dominio.
+    if que in ("efectos_adversos", "indicaciones"):
+        d[ce.COL_CATEGORIA] = tr_terms(d[ce.COL_CATEGORIA])
+
+    if desglose != "total":
+        if desglose == "pais":
+            d["_etq"] = d[ce.COL_DESGLOSE].map(nombre_pais).fillna(d[ce.COL_DESGLOSE])
+        else:
+            d["_etq"] = d[ce.COL_DESGLOSE]
+
+    # Sin desglose la representación es un ranking horizontal, que es la forma
+    # más legible cuando las etiquetas son términos médicos largos.
+    if desglose == "total":
+        d = d.nlargest(top, ce.COL_VALOR)
+        fig = px.bar(d.sort_values(ce.COL_VALOR), x=ce.COL_VALOR,
+                     y=ce.COL_CATEGORIA, orientation="h",
+                     labels={ce.COL_VALOR: t("Notificaciones", "Reports"),
+                             ce.COL_CATEGORIA: ""})
+        fig.update_traces(marker_color=BLUE)
+        return eje_paises_grande(estilo_plotly(fig, 460)), d
+
+    # Con desglose por país se emplea el peso relativo sobre el total de cada
+    # país y no el volumen absoluto. Como bien se sabe FAERS sobre Estados Unidos aporta en torno al 70 % de
+    # las notificaciones, de modo que un ranking absoluto reproduce siempre el
+    # mismo orden con independencia de lo que se consulte.
+    if desglose == "pais":
+        col_valor = ce.COL_PORCENTAJE if ce.COL_PORCENTAJE in d.columns else ce.COL_VALOR
+        principales = (d.groupby(ce.COL_CATEGORIA)[ce.COL_VALOR]
+                        .sum().nlargest(min(top, 6)).index)
+        d = d[d[ce.COL_CATEGORIA].isin(principales)]
+        d = d.nlargest(min(len(d), top * 4), col_valor)
+        fig = px.bar(d.sort_values(col_valor), x=col_valor, y="_etq",
+                     color=ce.COL_CATEGORIA, orientation="h",
+                     color_discrete_sequence=COLORWAY,
+                     labels={col_valor: t("% de las notificaciones del país",
+                                          "% of the country's reports"),
+                             "_etq": "", ce.COL_CATEGORIA: ""})
+        return eje_paises_grande(estilo_plotly(fig, 500)), d
+
+    # Desglose temporal. Se limita a las categorías de mayor peso, una serie con
+    # quince líneas superpuestas resulta ilegible.
+    principales = (d.groupby(ce.COL_CATEGORIA)[ce.COL_VALOR]
+                    .sum().nlargest(min(top, 8)).index)
+    d = d[d[ce.COL_CATEGORIA].isin(principales)].sort_values("_etq")
+
+    # La lectura en porcentaje responde a una pregunta distinta de la lectura en
+    # absolutos, un aumento de casos puede deberse solo a que ha crecido la
+    # notificación del fármaco, mientras que un aumento de la proporción indica
+    # un cambio real de perfil.
+    col_valor = ce.COL_VALOR
+    etiqueta_y = t("Notificaciones", "Reports")
+    if modo == "pct" and ce.COL_PORCENTAJE in d.columns:
+        col_valor = ce.COL_PORCENTAJE
+        etiqueta_y = t("% del total del trimestre", "% of the quarter's total")
+
+    if modo == "apilada":
+        fig = px.area(d, x="_etq", y=col_valor, color=ce.COL_CATEGORIA,
+                      color_discrete_sequence=COLORWAY,
+                      labels={"_etq": "", col_valor: etiqueta_y,
+                              ce.COL_CATEGORIA: ""})
+    else:
+        fig = px.line(d, x="_etq", y=col_valor, color=ce.COL_CATEGORIA,
+                      markers=True, color_discrete_sequence=COLORWAY,
+                      labels={"_etq": "", col_valor: etiqueta_y,
+                              ce.COL_CATEGORIA: ""})
+
+    fig = estilo_plotly(fig, 470)
+    if escala_log:
+        fig.update_yaxes(type="log")
+    return fig, d
+
+
+def crear_constructor():
+    st.subheader(t("Constructor", "Builder"))
+    intro(t("Elige qué quieres ver y sobre qué. La gráfica se genera sola.",
+            "Choose what you want to see and about what. The chart builds "
+            "itself."))
+
+    cat_far, cat_rea = _catalogos()
+
+    # Estado inicial. La vista arranca con una consulta ya resuelta para que la
+    # primera pantalla muestre un resultado y no un formulario vacío.
+    if "cst_que" not in st.session_state:
+        st.session_state["cst_que"] = INICIAL["que"]
+        st.session_state["cst_entidad"] = INICIAL["entidad"]
+        st.session_state["cst_tipo"] = INICIAL["tipo"]
+        st.session_state["cst_desglose"] = INICIAL["desglose"]
+
+    entidad = st.session_state["cst_entidad"]
+    tipo_entidad = st.session_state["cst_tipo"]
+
+    # Las opciones se filtran, los efectos adversos se consultan sobre un fármaco y los fármacos asociados sobre una
+    # reacción, de modo que ofrecer ambas a la vez llevaría a combinaciones sin
+    # resultado. El ajuste se hace antes de pintar la frase para que esta
+    # refleje siempre lo que se va a representar.
+    compatibles = [k for k, v in ce.MATRIZ.items()
+                   if v["entidad"] in (tipo_entidad, "ambas")]
+    if st.session_state["cst_que"] not in compatibles:
+        st.session_state["cst_que"] = compatibles[0]
+    que = st.session_state["cst_que"]
+
+    disponibles = ce.MATRIZ[que]["desgloses"]
+    if st.session_state["cst_desglose"] not in disponibles:
+        st.session_state["cst_desglose"] = disponibles[0]
+    desglose = st.session_state["cst_desglose"]
+
+    # Composición de la frase
+    # Las tres piezas se presentan arriba para que el usuario sepa que esta construyendo
+    i = 0 if L == "es" else 1
+    st.markdown(
+        f"<div class='frase'>{t('Mostrar', 'Show')} "
+        f"<b>{QUE_OPCIONES[que][i]}</b> {t('de', 'of')} "
+        f"<b>{entidad}</b> {t('visto por', 'broken down by')} "
+        f"<b>{DESGLOSE_OPCIONES[desglose][i]}</b></div>",
+        unsafe_allow_html=True)
+
+    p1, p2 = st.columns(2, gap="large")
+
+    with p1:
+        etiquetas = [QUE_OPCIONES[k][i] for k in compatibles]
+        sel = st.selectbox(t("Qué mostrar", "What to show"), etiquetas,
+                           index=compatibles.index(que), key="cst_sel_que")
+        if compatibles[etiquetas.index(sel)] != que:
+            st.session_state["cst_que"] = compatibles[etiquetas.index(sel)]
+            st.rerun()
+
+    with p2:
+        etq_desg = [DESGLOSE_OPCIONES[k][i] for k in disponibles]
+        sel_d = st.selectbox(t("Visto por", "Broken down by"), etq_desg,
+                             index=disponibles.index(desglose),
+                             key="cst_sel_desglose")
+        if disponibles[etq_desg.index(sel_d)] != desglose:
+            st.session_state["cst_desglose"] = disponibles[etq_desg.index(sel_d)]
+            st.rerun()
+
+    # El buscador va debajo de los dos selectores porque cambiar la entidad es
+    # la acción más frecuente y conviene tenerla a mano.
+    _buscador(cat_far, cat_rea)
+
+    # El umbral del precálculo no filtra la búsqueda, la entidad se consulta
+    # igualmente y se informa de que su lectura es frágil, en lugar de negar su
+    # existencia.
+    _, volumen_ent, supera = ce.identificar_entidad(entidad, cat_far, cat_rea)
+    if volumen_ent and not supera:
+        st.warning(t(f"«{entidad}» acumula {volumen_ent:,} notificaciones, por "
+                     "debajo del umbral de fiabilidad. Los resultados pueden no "
+                     "ser representativos.",
+                     f"«{entidad}» has {volumen_ent:,} reports, below the "
+                     "reliability threshold. Results may not be representative."))
+
+    with st.expander(t("Ajustes", "Settings"), expanded=False):
+        a1, a2, a3 = st.columns(3)
+        top = a1.slider(t("Nº de elementos", "Nº of items"), 3, 15, 8,
+                        key="cst_top")
+        if desglose == "trimestre":
+            modos = {t("Líneas", "Lines"): "lineas",
+                     t("Área apilada", "Stacked area"): "apilada",
+                     t("Porcentaje", "Percentage"): "pct"}
+            modo = modos[a2.selectbox(t("Representación", "Display"),
+                                      list(modos), key="cst_modo")]
+            escala_log = a3.checkbox(t("Escala logarítmica", "Log scale"),
+                                     value=False, key="cst_log")
+        else:
+            modo, escala_log = "lineas", False
+
+    st.divider()
+
+    # Las tablas del explorador ordenan por frecuencia y encabezan siempre términos inespecíficos
+    orden_desproporcion = False
+    if que == "efectos_adversos" and desglose == "total":
+        modo_orden = st.radio(
+            t("Ordenar por", "Sort by"),
+            [t("Más notificados", "Most reported"),
+             t("Más de lo esperado", "More than expected")],
+            horizontal=True, key="cst_orden", label_visibility="collapsed")
+        orden_desproporcion = modo_orden in (t("Más de lo esperado",
+                                               "More than expected"),)
+
+    ph = st.empty()
+    overlay_cargando(ph, t("Generando gráfica…", "Building chart…"))
+
+    if orden_desproporcion:
+        desp = _desproporcion(entidad, top)
+        ph.empty()
+        if desp is None or not len(desp):
+            st.info(t("No hay combinaciones que superen los criterios de señal "
+                      "con respaldo suficiente para este fármaco.",
+                      "No combinations pass the signal criteria with enough "
+                      "support for this drug."))
+            return
+        desp = desp.copy()
+        desp["disp"] = tr_terms(desp["pt_norm"])
+        fig = px.bar(desp.sort_values("veces"), x="veces", y="disp",
+                     orientation="h", custom_data=["casos"],
+                     labels={"veces": t("Veces más de lo esperado",
+                                        "× more than expected"), "disp": ""})
+        fig.update_traces(
+            marker_color=BLUE,
+            hovertemplate="<b>%{y}</b><br>×%{x:.1f} "
+                          + t("más de lo esperado", "more than expected")
+                          + "<br>%{customdata[0]:,} "
+                          + t("notificaciones", "reports") + "<extra></extra>")
+        fig = eje_paises_grande(estilo_plotly(fig, 460))
+        salida = desp[["pt_norm", "casos", "veces"]]
+        mostrar(fig, key=f"cst_{que}_{desglose}_desp")
+        st.caption(t("Solo efectos que superan los criterios estadísticos de "
+                     "señal y con al menos 20 casos detrás.",
+                     "Only effects passing the statistical signal criteria with "
+                     "at least 20 cases."))
+    else:
+        datos, error = _consulta_cacheada(que, entidad, tipo_entidad,
+                                          desglose, top)
+        ph.empty()
+        if error:
+            st.info(error)
+            return
+        if datos is None or not len(datos):
+            st.info(t(f"No hay datos suficientes de «{entidad}» para esta consulta.",
+                      f"Not enough data for «{entidad}» in this query."))
+            return
+        fig, salida = _grafica_constructor(datos, desglose, que, top,
+                                           modo, escala_log)
+        mostrar(fig, key=f"cst_{que}_{desglose}")
+
+    # Advertencias propias de cada consulta. Van junto a la gráfica y no en la
+    # documentación porque son necesarias para leerla correctamente.
+    if que == "gravedad":
+        st.caption(t("Los porcentajes suman más de cien: una misma notificación "
+                     "puede registrar varios desenlaces, por ejemplo "
+                     "hospitalización y riesgo vital.",
+                     "Percentages add up to more than one hundred: a single "
+                     "report may record several outcomes."))
+    if que == "indicaciones":
+        st.caption(t("Se excluye «indicación no especificada», que representa el "
+                     "38 % de los registros y desplazaría al resto.",
+                     "«Unknown indication» is excluded: it accounts for 38 % of "
+                     "records and would displace all others."))
+    if desglose == "pais":
+        st.caption(t("Se representa el peso sobre el total de notificaciones de "
+                     "cada país, no el volumen absoluto: Estados Unidos aporta "
+                     "en torno al 70 % del total y dominaría cualquier ranking.",
+                     "Share of each country's own total is shown, not absolute "
+                     "volume: the United States accounts for around 70 % of all "
+                     "reports."))
+
+    # El nombre del fichero lleva la consulta completa, de modo que una carpeta
+    # de descargas sigue siendo legible sin abrir los ficheros.
+    slug = f"{que}_{entidad}_{desglose}".replace(" ", "_").replace("/", "-")
+    e1, e2 = st.columns(2)
+    with e1:
+        boton_html(fig, f"pharmasignal_{slug}.html")
+    with e2:
+        boton_csv(salida, f"pharmasignal_{slug}.csv")
+    st.info(t("**Importante:** que un efecto se notifique junto a un fármaco no "
+              "prueba que el fármaco lo cause. Son hipótesis a investigar.",
+              "**Important:** an effect being reported alongside a drug does not "
+              "prove causation. These are hypotheses to investigate."))
 
 
 # Enrutado
