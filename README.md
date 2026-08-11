@@ -30,7 +30,7 @@ FAERS (FDA Adverse Event Reporting System), 2020–2025, vía ficheros ASCII + O
 ## Manual de usuario
 
 El manual completo de la herramienta está disponible en:
-[`docs/manual_usuario.pdf`](docs/manual_usuario.pdf).
+[`docs/manual_usuario.pdf`](docs/Manual%20de%20Usuario%20-%20PharmaSignal%20-%20Santos_G.pdf)
 
 ## Ejecución
 
