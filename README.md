@@ -27,6 +27,11 @@ FAERS (FDA Adverse Event Reporting System), 2020–2025, vía ficheros ASCII + O
 
 ![img_3.png](img_3.png)
 
+## Manual de usuario
+
+El manual completo de la herramienta está disponible en:
+[`docs/manual_usuario.pdf`](docs/manual_usuario.pdf).
+
 ## Ejecución
 
 El sistema admite dos formas de ejecución según lo que se quiera hacer. La interfaz
@@ -75,6 +80,8 @@ python src/curación/validar_curacion.py
 python src/analisis/prr_ror.py
 python src/analisis/analisis_geografico.py
 python src/analisis/analisis_temporal.py
+python src/analisis/analisis_explorador.py
+python src/analisis/analisis_explorador_cruces.py
 
 # 3. Frontend
 streamlit run src/app/streamlit_app.py
