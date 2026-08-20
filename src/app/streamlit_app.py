@@ -255,6 +255,24 @@ def cargar_traduccion():
 
 TRAD = cargar_traduccion()
 
+# Diccionario inverso, del término en español al término tal como figura en
+# FAERS. Permite que el buscador acepte lo que el usuario ve en pantalla: si la
+# interfaz muestra "náuseas", escribir "náuseas" encontrará el registro.
+# Aunque en la fuente esté como "nausea" que es el termino original FAERS.
+# Cuando dos términos ingleses comparten traducción prevalece el primero, que por el orden de carga es el corregido a
+# mano frente al generado de forma automática.
+TRAD_INV = {}
+for _en, _es in TRAD.items():
+    _clave = str(_es).strip().lower()
+    if _clave and _clave not in TRAD_INV:
+        TRAD_INV[_clave] = _en
+
+
+def termino_fuente(texto):
+    """Convierte lo que escribe el usuario al término tal como está en FAERS."""
+    t_norm = str(texto).strip().lower()
+    return TRAD_INV.get(t_norm, t_norm)
+
 
 def tr_terms(serie):
     """Traduce una columna de términos al español"""
@@ -1264,7 +1282,7 @@ def crear_listos():
 # Etiquetas de las piezas de la frase. Se traducen aquí y no en el módulo de
 # consultas porque el idioma es cuestión de presentación.
 QUE_OPCIONES = {
-    "efectos_adversos": ("Efectos adversos", "Adverse effects"),
+    "efectos_adversos": ("Efectos notificados", "Reported effects"),
     "farmacos": ("Fármacos asociados", "Associated drugs"),
     "indicaciones": ("Motivo de administración", "Reason for administration"),
     "gravedad": ("Gravedad de los casos", "Case severity"),
@@ -1291,15 +1309,85 @@ def _catalogos():
 
 
 @st.cache_data(show_spinner=False)
+def _senales_completas():
+    """Tabla de desproporción completa, sin el umbral del precálculo.
+
+    Las tablas del explorador se materializan solo para las entidades que
+    superan los umbrales de volumen, de modo que una consulta sobre un fármaco
+    poco notificado no encuentra nada. Esta tabla contiene todas las
+    combinaciones y permite resolver en el momento las consultas
+    del total del periodo.
+
+    """
+    df = cargar("senales_prr_ror")
+    if df is None:
+        return None
+    df = df.copy()
+    # La columna a incorpora la corrección de Haldane-Anscombe, medio caso por
+    # casilla, que se descuenta para recuperar el recuento real.
+    df["casos"] = (df["a"] - 0.5).round().astype(int)
+    return df
+
+
+@st.cache_data(show_spinner=False)
+def _consulta_en_vivo(que, entidad, top):
+    """Resuelve al momento las consultas de una entidad sin precálculo.
+
+    Cubre únicamente los desgloses sobre el total del periodo, que son los que
+    la tabla de desproporción permite reconstruir. Los desgloses temporales y
+    geográficos exigen dimensiones que esa tabla no contiene, y por ese motivo no
+    se muestran cuando la entidad carece de precálculo.
+
+    """
+    sen = _senales_completas()
+    if sen is None:
+        return None
+
+    if que == "efectos_adversos":
+        df = sen[sen["drugname_norm"] == entidad]
+        col_categoria = "pt_norm"
+    else:
+        df = sen[sen["pt_norm"] == entidad]
+        col_categoria = "drugname_norm"
+
+    if not len(df):
+        return None
+
+    salida = df.nlargest(top, "casos")[[col_categoria, "casos"]].copy()
+    salida.columns = [ce.COL_CATEGORIA, ce.COL_VALOR]
+    return salida.reset_index(drop=True)
+
+
+@st.cache_data(show_spinner=False)
+def _tiene_precalculo(entidad, tipo_entidad):
+    """Revisa si la entidad supera el umbral y dispone de tablas materializadas.
+
+    De esta comprobación depende qué opciones se ofrecen.
+    """
+    cat_far, cat_rea = _catalogos()
+    _, _, supera = ce.identificar_entidad(entidad, cat_far, cat_rea)
+    return supera
+
+
+@st.cache_data(show_spinner=False)
 def _consulta_cacheada(que, entidad, tipo_entidad, desglose, top):
     # La caché queda definida por las cuatro piezas de la frase, de modo que
-    # volver a una combinación ya vista es inmediato. El error se devuelve como
-    # texto en lugar de propagarse, una excepción dentro de una función cacheada
-    # invalida la entrada y obligaría a recalcular en cada rerun.
+    # volver a una combinación ya vista es inmediato.
     try:
-        return ce.consultar(que, entidad, tipo_entidad, desglose, top), None
+        datos = ce.consultar(que, entidad, tipo_entidad, desglose, top)
     except Exception as e:
         return None, str(e)
+
+    # Las tablas del explorador solo contienen las entidades que superan el
+    # umbral de volumen. Cuando la consulta no devuelve nada y el desglose es el
+    # total del periodo, se resuelve en el momento de la búsqueda sobre la tabla de desproporción,
+    # que no está sujeta a ese umbral. Así una entidad poco notificada muestra
+    # resultados con su advertencia, en lugar de una pantalla vacía.
+    if (datos is None or not len(datos)) and desglose == "total" \
+            and que in ("efectos_adversos", "farmacos"):
+        datos = _consulta_en_vivo(que, entidad, top)
+
+    return datos, None
 
 
 @st.cache_data(show_spinner=False)
@@ -1320,19 +1408,144 @@ def _desproporcion(farmaco, top):
     return agg.nlargest(top, "veces")
 
 
+@st.cache_data(show_spinner=False)
+def _tabla_catalogo():
+    """Catálogo unificado de todas las entidades consultables.
+
+    Reúne fármacos y reacciones en una sola tabla, ordenada por volumen y con
+    una marca de si la entidad supera el umbral a partir del cual su lectura es
+    fiable.
+
+    Los nombres se devuelven sin traducir. La traducción depende del idioma
+    seleccionado, que es una variable global, y aplicarla dentro de una función
+    cacheada guardaría el resultado en el idioma equivocado.
+    """
+    cat_far, cat_rea = _catalogos()
+
+    far = pd.DataFrame({
+        "nombre": cat_far["drugname_norm"],
+        "tipo": "farmaco",
+        "volumen": cat_far["reportes"].astype(int),
+        "umbral": cat_far["reportes"] >= ce.MIN_REPORTES_FARMACO,
+    })
+    rea = pd.DataFrame({
+        "nombre": cat_rea["pt_norm"],
+        "tipo": "reaccion",
+        "volumen": cat_rea["casos"].astype(int),
+        "umbral": cat_rea["casos"] >= ce.MIN_CASOS_REACCION,
+    })
+
+    return pd.concat([far, rea], ignore_index=True) \
+             .sort_values("volumen", ascending=False) \
+             .reset_index(drop=True)
+
+
+@st.dialog(" ", width="large")
+def _dialogo_catalogo():
+    """Ventana emergente con el catálogo completo de entidades consultables.
+
+    Se abre desde el propio buscador para que consultar qué existe no obligue a
+    abandonar la consulta en curso. Las reacciones se muestran traducidas al
+    idioma activo en la herramienta en ese momento
+    los nombres de fármaco se conservan tal como figuran en FAERS,
+    porque son denominaciones internacionales y marcas comerciales.
+    """
+    st.markdown("### " + t("Catálogo de fármacos y reacciones",
+                           "Catalogue of drugs and reactions"))
+
+    cat = _tabla_catalogo().copy()
+
+    # La traducción se aplica fuera de la función cacheada y solo sobre las
+    # reacciones. El nombre original se conserva en una columna aparte porque es
+    # el que permite localizar la entidad si la traducción no está disponible.
+    cat["mostrado"] = cat["nombre"]
+    if L == "es" and TRAD:
+        es_reaccion = cat["tipo"] == "reaccion"
+        cat.loc[es_reaccion, "mostrado"] = tr_terms(cat.loc[es_reaccion, "nombre"])
+
+    cat["tipo_disp"] = cat["tipo"].map({
+        "farmaco": t("Fármaco", "Drug"),
+        "reaccion": t("Reacción", "Reaction"),
+    })
+
+    st.caption(t(f"{len(cat):,} entidades consultables. Todas pueden buscarse. "
+                 "La columna «lectura fiable» indica si la entidad alcanza el "
+                 "respaldo mínimo de notificaciones; las que no lo alcanzan se "
+                 "consultan igualmente, con una advertencia y limitadas a la "
+                 "vista sobre el total del periodo.",
+                 f"{len(cat):,} searchable entities. All can be queried. The "
+                 "«reliable reading» column shows whether the entity meets the "
+                 "minimum support; those below it are still available, with a "
+                 "warning and limited to the whole-period view."))
+
+    # El buscador propio filtra sobre el conjunto antes de entregarlo a la tabla.
+    filtro = st.text_input(
+        t("Filtrar", "Filter"), key="cat_filtro",
+        placeholder=t("Escribe para filtrar el listado…",
+                      "Type to filter the list…"))
+
+    mostrar_cat = cat
+    if filtro and filtro.strip():
+        f = filtro.strip().lower()
+        # Se busca en las dos columnas para que el filtro funcione tanto con el
+        # término traducido que aparece en pantalla como con el original.
+        coincide = (cat["mostrado"].str.lower().str.contains(f, regex=False, na=False)
+                    | cat["nombre"].str.lower().str.contains(f, regex=False, na=False))
+        mostrar_cat = cat[coincide]
+        st.caption(f"{len(mostrar_cat):,} " + t("coincidencias", "matches"))
+
+    columnas = ["mostrado", "tipo_disp", "volumen", "umbral"]
+    nombres = {
+        "mostrado": t("Nombre", "Name"),
+        "tipo_disp": t("Tipo", "Type"),
+        "volumen": t("Notificaciones", "Reports"),
+        "umbral": t("Lectura fiable", "Reliable reading"),
+    }
+
+    # En español se añade el término original, que es el que hay que escribir en
+    # el buscador cuando la traducción no coincide con la fuente.
+    if L == "es" and TRAD:
+        columnas.insert(1, "nombre")
+        nombres["nombre"] = "Nombre en FAERS"
+
+    vista = mostrar_cat[columnas].head(1000).rename(columns=nombres)
+    st.dataframe(vista, width='stretch', height=380, hide_index=True)
+
+    if len(mostrar_cat) > 1000:
+        st.caption(t("Se muestran las 1.000 entidades de mayor volumen. Usa el "
+                     "filtro o descarga el catálogo completo.",
+                     "Showing the 1,000 highest-volume entities. Use the filter "
+                     "or download the full catalogue."))
+
+    st.download_button(
+        t("⬇ Descargar catálogo completo (CSV)",
+          "⬇ Download full catalogue (CSV)"),
+        mostrar_cat[columnas].rename(columns=nombres)
+            .to_csv(index=False).encode("utf-8"),
+        file_name="pharmasignal_catalogo.csv", mime="text/csv",
+        key="cat_descarga")
+
+
 def _buscador(cat_far, cat_rea):
     """Campo de búsqueda de la entidad sobre la que se consulta.
 
-    Se emplea un campo de texto libre y no un desplegable con el catálogo
-    completo se trata de un conjunto con más de treinta y seis mil entidades y una lista de ese tamaño
-    resulta inmanejable, además de obligar al navegador a recibirla entera.
+    Se emplea un campo de texto libre y no un desplegable con el catálogo.
 
     El usuario escribe cualquier término y confirma. Si lo escrito coincide
     exactamente con una entidad del catálogo se aplica directamente, si no, se
     ofrecen las coincidencias parciales para elegir.
     """
-    st.markdown("**" + t("Busca aquí el fármaco o la reacción adversa",
-                         "Search here for the drug or adverse effect") + "**")
+    # El acceso al catálogo se sitúa junto al propio campo de búsqueda. Quien
+    # no sabe qué buscar lo descubre en el momento en que se plantea la duda,
+    # sin abandonar la consulta en curso.
+    cab1, cab2 = st.columns([3, 1])
+    with cab1:
+        st.markdown("**" + t("Busca aquí el fármaco o la reacción adversa",
+                             "Search here for the drug or adverse effect") + "**")
+    with cab2:
+        if st.button(t("Ver catálogo completo", "View full catalogue"),
+                     width='stretch', key="cst_abrir_catalogo"):
+            _dialogo_catalogo()
 
     q = st.text_input(
         t("Búsqueda", "Search"),
@@ -1344,24 +1557,36 @@ def _buscador(cat_far, cat_rea):
     if len(q) < 3:
         return
 
+    # Lo que el usuario escribe puede estar en el idioma de la interfaz, que no
+    # es el de la fuente. Se traduce al término original antes de buscar.
+    q_fuente = termino_fuente(q)
+
     # Si lo escrito coincide con una entidad del catálogo se aplica sin pedir
-    # confirmación, obligar a elegir de una lista de un solo elemento sería un
+    # confirmación, obligar a elegir al usuario de una lista de un solo elemento sería un
     # paso innecesario.
-    tipo, _, _ = ce.identificar_entidad(q, cat_far, cat_rea)
-    if tipo and q != st.session_state["cst_entidad"]:
-        st.session_state["cst_entidad"] = q
+    tipo, _, _ = ce.identificar_entidad(q_fuente, cat_far, cat_rea)
+    if tipo and q_fuente != st.session_state["cst_entidad"]:
+        st.session_state["cst_entidad"] = q_fuente
         st.session_state["cst_tipo"] = tipo
         st.rerun()
     if tipo:
         return
 
-    sugerencias = ce.sugerir(q, cat_far, cat_rea, limite=8)
+    sugerencias = ce.sugerir(q_fuente, cat_far, cat_rea, limite=8)
+
+    # Si la búsqueda por el término traducido no devuelve nada, se reintenta con
+    # el texto original.
+    if not sugerencias and q_fuente != q:
+        sugerencias = ce.sugerir(q, cat_far, cat_rea, limite=8)
+
     if not sugerencias:
-        st.caption(t(f"Sin coincidencias para «{q}». Los nombres están como "
-                     "aparecen en FAERS, normalmente en inglés o con la marca "
-                     "comercial: *ibuprofen*, no *ibuprofeno*.",
-                     f"No matches for «{q}». Names appear as in FAERS, usually "
-                     "in English or as a brand name."))
+        st.caption(t(f"Sin coincidencias para «{q}». Los nombres de fármaco "
+                     "están como aparecen en FAERS, normalmente en inglés o con "
+                     "la marca comercial: *ibuprofen*, no *ibuprofeno*. Consulta "
+                     "el catálogo completo si no sabes cómo figura el término.",
+                     f"No matches for «{q}». Drug names appear as in FAERS, "
+                     "usually in English or as a brand name. Check the full "
+                     "catalogue if you are unsure how a term is recorded."))
         return
 
     # Las coincidencias se reparten en filas de cuatro para que no se compriman
@@ -1370,12 +1595,43 @@ def _buscador(cat_far, cat_rea):
     for i in range(0, len(sugerencias), 4):
         cols = st.columns(4)
         for col, (nombre, tipo_s, vol) in zip(cols, sugerencias[i:i + 4]):
-            if col.button(nombre[:26], width='stretch',
+            etiqueta = nombre
+            if L == "es" and tipo_s == "reaccion" and TRAD:
+                etiqueta = TRAD.get(nombre.lower(), nombre)
+            if col.button(etiqueta[:26], width='stretch',
                           key=f"sug_{tipo_s}_{nombre}",
                           help=f"{vol:,} " + t("notificaciones", "reports")):
                 st.session_state["cst_entidad"] = nombre
                 st.session_state["cst_tipo"] = tipo_s
                 st.rerun()
+
+
+def _entidad_disp(entidad, tipo_entidad):
+    """Devuelve el nombre de la entidad tal como debe mostrarse en pantalla.
+
+    Las reacciones se traducen al idioma activo, sin embargo, los nombres de fármaco no como mencionaba anteriormente,
+    porque son denominaciones internacionales y marcas comerciales.
+    """
+    if L == "es" and tipo_entidad == "reaccion" and TRAD:
+        return TRAD.get(str(entidad).lower(), entidad)
+    return entidad
+
+
+def _titulo_grafica(que, entidad, desglose, tipo_entidad, desproporcion=False):
+    """Compone el título de la representación a partir de la consulta.
+
+    El conjunto de combinaciones posibles es cerrado y conocido, de modo que el
+    título puede derivarse de las tres piezas que el usuario ha seleccionado sin
+    necesidad de que las redacte.
+    """
+    i = 0 if L == "es" else 1
+    base = f"{QUE_OPCIONES[que][i]} {t('de', 'of')} {_entidad_disp(entidad, tipo_entidad)}"
+
+    if desproporcion:
+        return base + " · " + t("ordenados por desproporción",
+                                "sorted by disproportionality")
+
+    return base + " · " + t("visto por", "by") + " " + DESGLOSE_OPCIONES[desglose][i]
 
 
 def _grafica_constructor(datos, desglose, que, top, modo, escala_log):
@@ -1386,9 +1642,6 @@ def _grafica_constructor(datos, desglose, que, top, modo, escala_log):
     """
     d = datos.copy()
 
-    # Reacciones e indicaciones se traducen. Los nombres de fármaco no, ya que son
-    # denominaciones internacionales y así los reconoce el usuario, como
-    # confirmó la evaluación con los perfiles de dominio.
     if que in ("efectos_adversos", "indicaciones"):
         d[ce.COL_CATEGORIA] = tr_terms(d[ce.COL_CATEGORIA])
 
@@ -1485,11 +1738,26 @@ def crear_constructor():
     # refleje siempre lo que se va a representar.
     compatibles = [k for k, v in ce.MATRIZ.items()
                    if v["entidad"] in (tipo_entidad, "ambas")]
+
+    # Una entidad por debajo del umbral no dispone de tablas materializadas. Sus
+    # consultas se resuelven al momento sobre la tabla de desproporción, que
+    # contiene todas las combinaciones evaluadas pero no las dimensiones
+    # temporal ni geográfica. En ese caso solo se ofrece lo que puede
+    # responderse, en lugar de presentar opciones que devolverían una vista
+    # vacía.
+    con_precalculo = _tiene_precalculo(entidad, tipo_entidad)
+    if not con_precalculo:
+        compatibles = [k for k in compatibles
+                       if k in ("efectos_adversos", "farmacos")] or compatibles
+
     if st.session_state["cst_que"] not in compatibles:
         st.session_state["cst_que"] = compatibles[0]
     que = st.session_state["cst_que"]
 
     disponibles = ce.MATRIZ[que]["desgloses"]
+    if not con_precalculo:
+        disponibles = [d for d in disponibles if d == "total"] or disponibles
+
     if st.session_state["cst_desglose"] not in disponibles:
         st.session_state["cst_desglose"] = disponibles[0]
     desglose = st.session_state["cst_desglose"]
@@ -1500,7 +1768,7 @@ def crear_constructor():
     st.markdown(
         f"<div class='frase'>{t('Mostrar', 'Show')} "
         f"<b>{QUE_OPCIONES[que][i]}</b> {t('de', 'of')} "
-        f"<b>{entidad}</b> {t('visto por', 'broken down by')} "
+        f"<b>{_entidad_disp(entidad, tipo_entidad)}</b> {t('visto por', 'broken down by')} "
         f"<b>{DESGLOSE_OPCIONES[desglose][i]}</b></div>",
         unsafe_allow_html=True)
 
@@ -1524,7 +1792,7 @@ def crear_constructor():
             st.rerun()
 
     # El buscador va debajo de los dos selectores porque cambiar la entidad es
-    # la acción más frecuente y conviene tenerla a mano.
+    # la acción más frecuente y conviene que sea accesible.
     _buscador(cat_far, cat_rea)
 
     # El umbral del precálculo no filtra la búsqueda, la entidad se consulta
@@ -1532,11 +1800,17 @@ def crear_constructor():
     # existencia.
     _, volumen_ent, supera = ce.identificar_entidad(entidad, cat_far, cat_rea)
     if volumen_ent and not supera:
-        st.warning(t(f"«{entidad}» acumula {volumen_ent:,} notificaciones, por "
+        ent_disp = _entidad_disp(entidad, tipo_entidad)
+        st.warning(t(f"«{ent_disp}» acumula {volumen_ent:,} notificaciones, por "
                      "debajo del umbral de fiabilidad. Los resultados pueden no "
-                     "ser representativos.",
-                     f"«{entidad}» has {volumen_ent:,} reports, below the "
-                     "reliability threshold. Results may not be representative."))
+                     "ser representativos y solo se ofrece la vista sobre el "
+                     "total del periodo: los desgloses por trimestre y por país "
+                     "exigen un volumen que esta entidad no alcanza.",
+                     f"«{ent_disp}» has {volumen_ent:,} reports, below the "
+                     "reliability threshold. Results may not be representative "
+                     "and only the whole-period view is available: the quarterly "
+                     "and country breakdowns require a volume this entity does "
+                     "not reach."))
 
     with st.expander(t("Ajustes", "Settings"), expanded=False):
         a1, a2, a3 = st.columns(3)
@@ -1557,7 +1831,7 @@ def crear_constructor():
 
     # Las tablas del explorador ordenan por frecuencia y encabezan siempre términos inespecíficos
     orden_desproporcion = False
-    if que == "efectos_adversos" and desglose == "total":
+    if que == "efectos_adversos" and desglose == "total" and con_precalculo:
         modo_orden = st.radio(
             t("Ordenar por", "Sort by"),
             [t("Más notificados", "Most reported"),
@@ -1591,6 +1865,10 @@ def crear_constructor():
                           + "<br>%{customdata[0]:,} "
                           + t("notificaciones", "reports") + "<extra></extra>")
         fig = eje_paises_grande(estilo_plotly(fig, 460))
+        fig.update_layout(
+            title=dict(text=_titulo_grafica(que, entidad, desglose, tipo_entidad, True),
+                       font=dict(size=15, color=INK), x=0, xanchor="left"),
+            margin=dict(l=10, r=10, t=55, b=10))
         salida = desp[["pt_norm", "casos", "veces"]]
         mostrar(fig, key=f"cst_{que}_{desglose}_desp")
         st.caption(t("Solo efectos que superan los criterios estadísticos de "
@@ -1605,11 +1883,18 @@ def crear_constructor():
             st.info(error)
             return
         if datos is None or not len(datos):
-            st.info(t(f"No hay datos suficientes de «{entidad}» para esta consulta.",
-                      f"Not enough data for «{entidad}» in this query."))
+            ent_disp = _entidad_disp(entidad, tipo_entidad)
+            st.info(t(f"No hay datos suficientes de «{ent_disp}» para esta consulta.",
+                      f"Not enough data for «{ent_disp}» in this query."))
             return
         fig, salida = _grafica_constructor(datos, desglose, que, top,
                                            modo, escala_log)
+        # El título se aplica aquí y no dentro de la función de representación
+        # porque solo en este punto se conocen las tres piezas de la consulta.
+        fig.update_layout(
+            title=dict(text=_titulo_grafica(que, entidad, desglose, tipo_entidad),
+                       font=dict(size=15, color=INK), x=0, xanchor="left"),
+            margin=dict(l=10, r=10, t=70, b=10))
         mostrar(fig, key=f"cst_{que}_{desglose}")
 
     # Advertencias propias de cada consulta. Van junto a la gráfica y no en la
