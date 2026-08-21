@@ -1,0 +1,12 @@
+tipo,farmaco,reaccion,casos,prr,ror,ror_ic_inf,chi2,detectada,esperado,acierto,referencia
+Positivo,ozempic,impaired gastric emptying,1680,76.33,79.87,75.52,94267.2,True,True,True,Advertencia incorporada por la FDA en 2023
+Positivo,finasteride,erectile dysfunction,1141,127.09,145.14,135.94,126287.7,True,True,True,Efecto recogido en ficha tecnica
+Positivo,ranitidine,neoplasm malignant,913,2.92,2.95,2.76,1131.0,True,True,True,Retirada mundial en 2020 por contaminacion con NDMA
+Positivo,oxycontin,drug dependence,83762,160.38,1788.52,1745.5,4995032.6,True,True,True,Efecto de clase de los opioides
+Positivo,belantamab mafodotin,keratopathy,764,8496.04,13611.8,11905.46,2188317.9,True,True,True,Toxicidad ocular caracteristica
+Negativo,metformin,keratopathy,0,,,,,False,False,True,Sin mecanismo sobre el epitelio corneal
+Negativo,ibuprofen,erectile dysfunction,11,0.42,0.42,0.23,9.4,False,False,True,Sin efecto sobre la funcion erectil
+Negativo,omeprazole,alopecia,45,0.5,0.49,0.37,23.5,False,False,True,Sin efecto sobre el foliculo piloso
+Negativo,atorvastatin,cataract,64,1.3,1.3,1.01,4.3,False,False,True,Sin toxicidad sobre el cristalino
+Negativo,levothyroxine,drug dependence,6,0.12,0.12,0.06,41.4,False,False,True,Sin potencial de dependencia
+Negativo,amoxicillin,neoplasm malignant,5,0.16,0.16,0.07,23.5,False,False,True,Sin efecto carcinogenico descrito
