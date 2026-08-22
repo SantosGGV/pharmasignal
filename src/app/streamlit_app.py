@@ -1210,7 +1210,6 @@ TABLAS = {
     "geo_perfil_paises": ("Perfil por país", "Country profile"),
     "geo_divergencia_farmacos": ("Divergencia de fármacos (ES)", "Drug divergence (ES)"),
     "geo_divergencia_reacciones": ("Divergencia de reacciones (ES)", "Reaction divergence (ES)"),
-    "geo_senales_espana": ("Señales de España", "Spain signals"),
     "geo_perfil_renta": ("Perfil por nivel de renta", "Income-level profile"),
     "geo_glp1_paises": ("GLP-1 por país", "GLP-1 by country"),
     "geo_evolucion_espana": ("Evolución de España", "Spain evolution"),
