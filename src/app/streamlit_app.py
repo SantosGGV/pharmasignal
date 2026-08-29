@@ -1867,7 +1867,9 @@ def crear_constructor():
         fig.update_layout(
             title=dict(text=_titulo_grafica(que, entidad, desglose, tipo_entidad, True),
                        font=dict(size=15, color=INK), x=0, xanchor="left"),
-            margin=dict(l=10, r=10, t=55, b=10))
+            legend=dict(orientation="h", yanchor="top", y=-0.15,
+                        xanchor="left", x=0),
+            margin=dict(l=10, r=10, t=55, b=70))
         salida = desp[["pt_norm", "casos", "veces"]]
         mostrar(fig, key=f"cst_{que}_{desglose}_desp")
         st.caption(t("Solo efectos que superan los criterios estadísticos de "
@@ -1893,7 +1895,9 @@ def crear_constructor():
         fig.update_layout(
             title=dict(text=_titulo_grafica(que, entidad, desglose, tipo_entidad),
                        font=dict(size=15, color=INK), x=0, xanchor="left"),
-            margin=dict(l=10, r=10, t=70, b=10))
+            legend=dict(orientation="h", yanchor="top", y=-0.15,
+                        xanchor="left", x=0),
+            margin=dict(l=10, r=10, t=55, b=70))
         mostrar(fig, key=f"cst_{que}_{desglose}")
 
     # Advertencias propias de cada consulta. Van junto a la gráfica y no en la
