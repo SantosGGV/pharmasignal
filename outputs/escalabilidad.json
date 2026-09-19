@@ -1,0 +1,70 @@
+{
+  "configuracion": {
+    "nucleos": 12,
+    "memoria_driver": "16g",
+    "particiones": 200,
+    "repeticiones": 3
+  },
+  "resultados": [
+    {
+      "trimestres": 4,
+      "reportes": 1435892,
+      "combinaciones": 219951,
+      "tiempo_mediana_s": 15.55,
+      "tiempo_min_s": 13.32,
+      "tiempo_max_s": 15.63,
+      "memoria_pico_mb": null,
+      "segundos_por_millon": 10.83,
+      "factor_volumen": 1.0,
+      "factor_tiempo": 1.0
+    },
+    {
+      "trimestres": 8,
+      "reportes": 3013959,
+      "combinaciones": 374431,
+      "tiempo_mediana_s": 24.12,
+      "tiempo_min_s": 23.46,
+      "tiempo_max_s": 25.37,
+      "memoria_pico_mb": null,
+      "segundos_por_millon": 8.0,
+      "factor_volumen": 2.1,
+      "factor_tiempo": 1.55
+    },
+    {
+      "trimestres": 12,
+      "reportes": 4555073,
+      "combinaciones": 506081,
+      "tiempo_mediana_s": 32.19,
+      "tiempo_min_s": 31.68,
+      "tiempo_max_s": 33.55,
+      "memoria_pico_mb": null,
+      "segundos_por_millon": 7.07,
+      "factor_volumen": 3.17,
+      "factor_tiempo": 2.07
+    },
+    {
+      "trimestres": 16,
+      "reportes": 5953708,
+      "combinaciones": 627145,
+      "tiempo_mediana_s": 38.31,
+      "tiempo_min_s": 37.02,
+      "tiempo_max_s": 41.89,
+      "memoria_pico_mb": null,
+      "segundos_por_millon": 6.43,
+      "factor_volumen": 4.15,
+      "factor_tiempo": 2.46
+    },
+    {
+      "trimestres": 24,
+      "reportes": 8785483,
+      "combinaciones": 868093,
+      "tiempo_mediana_s": 56.35,
+      "tiempo_min_s": 56.08,
+      "tiempo_max_s": 56.82,
+      "memoria_pico_mb": null,
+      "segundos_por_millon": 6.41,
+      "factor_volumen": 6.12,
+      "factor_tiempo": 3.62
+    }
+  ]
+}
