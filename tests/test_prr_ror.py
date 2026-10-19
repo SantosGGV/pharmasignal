@@ -24,12 +24,15 @@ import pytest
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, exp, lit, log, sqrt
 
+from src import config
+
 # Constantes del módulo bajo prueba. Se replican aquí a propósito: si alguien
 # cambia un umbral en prr_ror.py sin actualizar estas pruebas, la discrepancia
 # debe hacerse visible.
 UMBRAL_PRR = 2.0
 MIN_CASOS = 3
 UMBRAL_CHI2 = 4.0
+UMBRAL_ROR_IC_INF = 1.0
 
 
 @pytest.fixture(scope="session")
@@ -316,3 +319,10 @@ def test_umbrales_del_modulo(spark):
     assert UMBRAL_PRR == 2.0
     assert MIN_CASOS == 3
     assert UMBRAL_CHI2 == 4.0
+    assert UMBRAL_ROR_IC_INF == 1.0
+    # Los umbrales que aplica el pipeline salen de config.toml y deben
+    # coincidir con los declarados aquí.
+    assert config.SENAL_PRR_MIN == UMBRAL_PRR
+    assert config.SENAL_CASOS_MIN == MIN_CASOS
+    assert config.SENAL_CHI2_MIN == UMBRAL_CHI2
+    assert config.SENAL_ROR_IC_INF_UMBRAL == UMBRAL_ROR_IC_INF

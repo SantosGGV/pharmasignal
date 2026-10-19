@@ -9,7 +9,8 @@
 # funcional sin exigir la ejecución previa del pipeline.
 set -euo pipefail
 
-BASE="$HOME/pharmasignal"
+# La base es la raíz del repositorio, un nivel por encima de este script.
+BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SALIDA="$BASE/docker/pharmasignal-datos-demo.tar.gz"
 
 TABLAS=(

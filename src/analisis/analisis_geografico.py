@@ -47,7 +47,12 @@ from pyspark.sql.functions import (
     round as spark_round, sum as spark_sum, coalesce
 )
 from delta import configure_spark_with_delta_pip
-import os
+import sys
+from pathlib import Path
+
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
 
 # La lista de fármacos GLP-1 vive ahora en familias.py, que es la fuente única
 # para todos los módulos de análisis. Antes estaba duplicada aquí y en
@@ -74,14 +79,14 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = os.path.expanduser("~/pharmasignal/data/curated")
+CURATED_PATH = config.RUTAS_CURATED
 
 # Umbrales del análisis. Se definen como constantes para que las decisiones
 # queden explícitas y sean fáciles de ajustar y justificar.
-MIN_CASOS_ES = 5          # mínimo de casos en España para evaluar una señal
-MIN_CASOS_GLOBAL = 20     # mínimo de casos globales para comparar
-MIN_CASOS_DIVERGENCIA = 30    # mínimo en España para el análisis de divergencia
-MIN_GLOBAL_DIVERGENCIA = 150  # mínimo global para el análisis de divergencia
+MIN_CASOS_ES = config.GEOGRAFIA_MIN_CASOS_ES          # mínimo de casos en España para evaluar una señal
+MIN_CASOS_GLOBAL = config.GEOGRAFIA_MIN_CASOS_GLOBAL     # mínimo de casos globales para comparar
+MIN_CASOS_DIVERGENCIA = config.GEOGRAFIA_MIN_CASOS_DIVERGENCIA    # mínimo en España para el análisis de divergencia
+MIN_GLOBAL_DIVERGENCIA = config.GEOGRAFIA_MIN_GLOBAL_DIVERGENCIA  # mínimo global para el análisis de divergencia
 
 # Clasificación de países por nivel de renta según el Banco Mundial.
 # Se emplea para el Análisis 4 en el que se compara por nivel de desarrollo.
@@ -230,7 +235,7 @@ perfil_pais.filter(col("reportes") >= 1000) \
 # sea estadísticamente estable.
 print("\nPaíses con mayor proporción de desenlaces mortales "
       "(mínimo 5.000 reportes):")
-perfil_pais.filter(col("reportes") >= 5000) \
+perfil_pais.filter(col("reportes") >= config.GEOGRAFIA_MIN_REPORTES_PAIS) \
     .orderBy(col("pct_muertes").desc()) \
     .select("reporter_country", "reportes", "muertes", "pct_muertes",
             "pct_grave") \
@@ -238,7 +243,7 @@ perfil_pais.filter(col("reportes") >= 5000) \
 
 print("\nPaíses con menor proporción de desenlaces mortales "
       "(mínimo 5.000 reportes):")
-perfil_pais.filter(col("reportes") >= 5000) \
+perfil_pais.filter(col("reportes") >= config.GEOGRAFIA_MIN_REPORTES_PAIS) \
     .orderBy(col("pct_muertes").asc()) \
     .select("reporter_country", "reportes", "muertes", "pct_muertes",
             "pct_grave") \
@@ -606,7 +611,7 @@ glp1_comparativa = glp1_por_pais \
           on="reporter_country", how="inner") \
     .withColumn("pct_glp1",
         spark_round((col("reportes_glp1") / col("reportes")) * 100, 2)) \
-    .filter(col("reportes") >= 5000)
+    .filter(col("reportes") >= config.GEOGRAFIA_MIN_REPORTES_PAIS)
 
 print("\nPaíses con mayor peso relativo de notificaciones GLP-1:")
 glp1_comparativa.orderBy(col("pct_glp1").desc()) \

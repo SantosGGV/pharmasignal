@@ -87,6 +87,26 @@ python src/analisis/analisis_explorador_cruces.py
 streamlit run src/app/streamlit_app.py
 ```
 
+### Configuración
+
+Las rutas y los umbrales están en un único fichero, `config.toml`, en la raíz del
+repositorio. Los scripts del pipeline y la interfaz lo leen a través de
+`src/config.py`, que expone cada valor con el prefijo de su sección (por ejemplo,
+`[senal] prr_min` se lee como `config.SENAL_PRR_MIN`).
+
+| Sección | Contenido |
+| --- | --- |
+| `[rutas]` | `data/raw`, `data/curated`, `data/diccionarios` y `outputs`, relativas a la base |
+| `[senal]` | Criterio de señal (PRR ≥ 2, a ≥ 3, χ² ≥ 4) y umbral del IC95 inferior del ROR (> 1) |
+| `[interfaz]` | Respaldo mínimo (20 casos) para mostrar una señal confirmada |
+| `[listados]` | Filtro de señales triviales (c ≥ 100 y a + b ≥ 200) |
+| `[geografia]` | Mínimos del análisis de España, mínimo de reportes por país y trimestres recodificados |
+| `[explorador]` | Mínimos de fármaco, reacción y país del constructor de gráficas |
+
+La base de las rutas es la raíz del repositorio. Para usar otra, define la variable
+de entorno `PHARMASIGNAL_BASE`. Cambiar un umbral cambia los resultados: hay que
+volver a ejecutar los scripts que generan las tablas afectadas.
+
 ## Solución de problemas
 
 Estos son los fallos que han aparecido al desplegar el sistema, separados según cómo

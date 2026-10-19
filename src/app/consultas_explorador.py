@@ -11,11 +11,17 @@ y no necesita conocer ni los nombres de las tablas ni los de sus columnas.
 """
 
 import os
+import sys
+from pathlib import Path
 
 import pandas as pd
 from deltalake import DeltaTable
 
-CURATED = os.path.expanduser("~/pharmasignal/data/curated")
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
+
+CURATED = config.RUTAS_CURATED
 
 # Nombres normalizados que devuelve toda consulta. La vista siempre encuentra
 # las mismas columnas, lo que permite que una única función de representación
@@ -40,8 +46,8 @@ DESENLACES = {
 # Umbrales del precálculo. No filtran la búsqueda: se emplean para advertir al
 # usuario cuando la entidad consultada queda por debajo y su lectura pierde
 # fiabilidad.
-MIN_REPORTES_FARMACO = 5000
-MIN_CASOS_REACCION = 1000
+MIN_REPORTES_FARMACO = config.EXPLORADOR_MIN_REPORTES_FARMACO
+MIN_CASOS_REACCION = config.EXPLORADOR_MIN_CASOS_REACCION
 
 # Combinaciones disponibles. La interfaz consulta esta estructura para no
 # ofrecer desgloses que no tienen tabla detrás y devolverían un resultado vacío.

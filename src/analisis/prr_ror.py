@@ -44,7 +44,12 @@ from pyspark.sql.functions import (
     col, countDistinct, lit, sqrt, log, exp, broadcast
 )
 from delta import configure_spark_with_delta_pip
-import os
+import sys
+from pathlib import Path
+
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
 
 builder = SparkSession.builder \
     .appName("PharmaSignal-PRR-ROR") \
@@ -59,12 +64,12 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = os.path.expanduser("~/pharmasignal/data/curated")
+CURATED_PATH = config.RUTAS_CURATED
 
 # Umbrales de señal según el criterio marcado por Evans et al. (2001)
-UMBRAL_PRR = 2.0
-MIN_CASOS = 3
-UMBRAL_CHI2 = 4.0
+UMBRAL_PRR = config.SENAL_PRR_MIN
+MIN_CASOS = config.SENAL_CASOS_MIN
+UMBRAL_CHI2 = config.SENAL_CHI2_MIN
 
 print("\nCargando datos curados...")
 
@@ -190,7 +195,8 @@ senales = senales \
         (col("a") >= MIN_CASOS) &
         (col("chi2") >= UMBRAL_CHI2)
     ) \
-    .withColumn("ror_significativo", col("ror_ic_inf") > lit(1.0))
+    .withColumn("ror_significativo",
+        col("ror_ic_inf") > lit(config.SENAL_ROR_IC_INF_UMBRAL))
 
 senales.cache()
 
@@ -226,8 +232,8 @@ print("\n")
 senales.filter(
         col("es_senal") &
         (col("a") >= 50) &
-        (col("c") >= 100) &
-        ((col("a") + col("b")) >= 200)
+        (col("c") >= config.LISTADOS_TRIVIAL_MIN_C) &
+        ((col("a") + col("b")) >= config.LISTADOS_TRIVIAL_MIN_REPORTES_FARMACO)
     ) \
     .select(
         "drugname_norm", "pt_norm",

@@ -24,7 +24,12 @@ from pyspark.sql.functions import (
     round as spark_round, sum as spark_sum, coalesce
 )
 from delta import configure_spark_with_delta_pip
-import os
+import sys
+from pathlib import Path
+
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
 
 builder = SparkSession.builder \
     .appName("PharmaSignal-Explorador") \
@@ -39,12 +44,12 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = os.path.expanduser("~/pharmasignal/data/curated")
+CURATED_PATH = config.RUTAS_CURATED
 
 # Umbrales de volumen. Se definen como constantes para que la decisión quede
 # explícita y sea fácil de ajustar.
-MIN_REPORTES_FARMACO = 5000
-MIN_CASOS_REACCION = 1000
+MIN_REPORTES_FARMACO = config.EXPLORADOR_MIN_REPORTES_FARMACO
+MIN_CASOS_REACCION = config.EXPLORADOR_MIN_CASOS_REACCION
 
 # La indicación "product used for unknown indication" representa el 38 % de los
 # registros de la tabla INDI. No aporta información y desplazaría a todas las

@@ -22,7 +22,12 @@ Principalmente trataremos dos grupos de especial relevancia que marcan la tenden
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, countDistinct, when, lit, sum as spark_sum
 from delta import configure_spark_with_delta_pip
-import os
+import sys
+from pathlib import Path
+
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
 
 # Las listas de fármacos viven ahora en familias.py, que es la fuente única para
 # todos los módulos de análisis. Antes estaban duplicadas aquí y en
@@ -52,7 +57,7 @@ spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
 # Ruta donde residen las tablas curadas en formato Delta Lake.
-CURATED_PATH = os.path.expanduser("~/pharmasignal/data/curated")
+CURATED_PATH = config.RUTAS_CURATED
 
 # Se trata del órden cronológico de los 24 trimestres. Aunque el nombre de trimestre por defecto
 # ya ordena bien alfabéticamente, se mantiene esta lista como referencia.

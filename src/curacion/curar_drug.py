@@ -30,7 +30,12 @@ from pyspark.sql.functions import (
     col, trim, lower, upper, regexp_replace, when
 )
 from delta import configure_spark_with_delta_pip
-import os
+import sys
+from pathlib import Path
+
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
 
 builder = SparkSession.builder \
     .appName("PharmaSignal-Curación-DRUG") \
@@ -44,7 +49,7 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = os.path.expanduser("~/pharmasignal/data/curated")
+CURATED_PATH = config.RUTAS_CURATED
 
 # Cargamos DRUG desde Delta Lake (dato crudo consolidado)
 drug = spark.read.format("delta").load(f"{CURATED_PATH}/drug")

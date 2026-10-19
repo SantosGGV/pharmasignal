@@ -15,16 +15,22 @@ Este script contrasta la salida contra conocimiento externo al proyecto:
 """
 
 import os
+import sys
+from pathlib import Path
 
 import pandas as pd
 from deltalake import DeltaTable
 
-CURATED = os.path.expanduser("~/pharmasignal/data/curated")
-SALIDA = os.path.expanduser("~/pharmasignal/outputs/validacion_senales.csv")
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
+
+CURATED = config.RUTAS_CURATED
+SALIDA = os.path.join(config.RUTAS_OUTPUTS, "validacion_senales.csv")
 
 # Respaldo minimo exigido para considerar una senal detectada. Es el mismo
 # criterio con el que la herramienta la muestra en sus vistas.
-MIN_CASOS = 20
+MIN_CASOS = config.INTERFAZ_MIN_CASOS_RESPALDO
 
 POSITIVOS = [
     ("ozempic", "impaired gastric emptying",

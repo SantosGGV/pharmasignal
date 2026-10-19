@@ -28,7 +28,12 @@ adversa, que constituyen el conjunto sobre el que se calcularán PRR y ROR.
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, count, countDistinct
 from delta import configure_spark_with_delta_pip
-import os
+import sys
+from pathlib import Path
+
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
 
 builder = SparkSession.builder \
     .appName("PharmaSignal-Validación-Curación") \
@@ -42,7 +47,7 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = os.path.expanduser("~/pharmasignal/data/curated")
+CURATED_PATH = config.RUTAS_CURATED
 
 # Volumetría de los datos en crudo, para calcular la reducción por curación
 CRUDO = {

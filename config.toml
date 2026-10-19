@@ -1,0 +1,56 @@
+# Configuración de PharmaSignal
+#
+# Fichero único de umbrales y rutas. Lo lee src/config.py, que expone cada
+# valor con el prefijo de su sección (por ejemplo, [senal] prr_min pasa a ser
+# config.SENAL_PRR_MIN) para que no choquen claves iguales de secciones
+# distintas.
+#
+# Cambiar un umbral cambia los resultados: hay que regenerar las tablas
+# afectadas ejecutando su script.
+
+[rutas]
+# Relativas a la base del proyecto. La base es la raíz del repositorio, salvo
+# que se defina la variable de entorno PHARMASIGNAL_BASE.
+raw = "data/raw"
+curated = "data/curated"
+diccionarios = "data/diccionarios"
+outputs = "outputs"
+
+[senal]
+# Criterio de señal de Evans et al. (2001): PRR >= 2, a >= 3 y chi2 >= 4.
+# Usado en prr_ror.py y medir_escalabilidad.py.
+prr_min = 2.0
+casos_min = 3
+chi2_min = 4.0
+# El ROR cuenta como significativo si el límite inferior de su IC95 es
+# estrictamente mayor que este valor.
+ror_ic_inf_umbral = 1.0
+
+[interfaz]
+# Respaldo mínimo, en casos, para mostrar una señal confirmada en la interfaz.
+# validar_senales.py aplica el mismo criterio.
+min_casos_respaldo = 20
+
+[listados]
+# Filtro de señales triviales: el listado de consola de prr_ror.py y la casilla
+# «Ocultar señales triviales» de la interfaz exigen un mínimo en las otras
+# casillas de la tabla 2x2 (c, y a+b = reportes del fármaco).
+trivial_min_c = 100
+trivial_min_reportes_farmaco = 200
+
+[geografia]
+# Usados en analisis_geografico.py, curar_geografia.py y la interfaz.
+min_casos_es = 5                  # mínimo de casos en España para evaluar una señal
+min_casos_global = 20             # mínimo de casos globales para comparar con España
+min_casos_divergencia = 30        # mínimo en España para el análisis de divergencia
+min_global_divergencia = 150      # mínimo global para el análisis de divergencia
+min_reportes_pais = 5000          # mínimo de notificaciones de un país para los rankings
+# Desde 2025Q3 FAERS mete a España en el agregado europeo.
+ultimo_trimestre_es = "2025q2"
+trimestres_recodificados = ["2025q3", "2025q4"]
+
+[explorador]
+# Umbrales de entidad de los catálogos y cruces del constructor.
+min_reportes_farmaco = 5000
+min_casos_reaccion = 1000
+min_reportes_pais = 10000

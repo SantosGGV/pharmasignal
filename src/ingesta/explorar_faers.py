@@ -9,7 +9,12 @@ el pipeline de ingesta completo.
 """
 
 from pyspark.sql import SparkSession
-import os
+import sys
+from pathlib import Path
+
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
 
 # Configuraicón de la sesión Spark
 # Se usa modo local[*] para aprovechar todos los núcleos disponibles
@@ -30,7 +35,7 @@ spark.sparkContext.setLogLevel("ERROR")
 # Los ficheros FAERS estan almacenados en WSL2
 # (~/pharmasignal/data/raw/) para maximizar el rendimiento de I/O.
 
-RAW_PATH = os.path.expanduser("~/pharmasignal/data/raw")
+RAW_PATH = config.RUTAS_RAW
 
 # Exploramos el trimestre 2020Q1 como muestra representativa
 demo_path = f"{RAW_PATH}/faers_ascii_2020q1/ASCII/DEMO20Q1.txt"
