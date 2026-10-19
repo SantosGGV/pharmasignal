@@ -36,6 +36,12 @@ from pyspark.sql.functions import (
 from delta import configure_spark_with_delta_pip
 import os
 import shutil
+import sys
+from pathlib import Path
+
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
 
 builder = SparkSession.builder \
     .appName("PharmaSignal-ExploradorCruces") \
@@ -50,12 +56,12 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = os.path.expanduser("~/pharmasignal/data/curated")
+CURATED_PATH = config.RUTAS_CURATED
 
 # Umbrales de entidad. Idénticos a los de la primera pasada, si una entidad no
 # entra en los catálogos del explorador, tampoco debe aparecer en los cruces.
-MIN_REPORTES_FARMACO = 5000
-MIN_CASOS_REACCION = 1000
+MIN_REPORTES_FARMACO = config.EXPLORADOR_MIN_REPORTES_FARMACO
+MIN_CASOS_REACCION = config.EXPLORADOR_MIN_CASOS_REACCION
 
 # Acotación de los pares. Sin este límite el cruce fármaco × reacción produce
 # millones de combinaciones
@@ -65,7 +71,7 @@ TOP_INDICACIONES_POR_FARMACO = 10
 
 # Umbral de volumen por país. Se emplea un umbral y no un ranking de los N
 # primeros
-MIN_REPORTES_PAIS = 10000
+MIN_REPORTES_PAIS = config.EXPLORADOR_MIN_REPORTES_PAIS
 
 # Indicación sin contenido informativo, excluida igual que en la primera pasada.
 INDICACION_DESCONOCIDA = "product used for unknown indication"

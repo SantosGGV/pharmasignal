@@ -25,6 +25,11 @@ RUN pip install --no-cache-dir \
 # Codigo de la aplicacion.
 COPY src/app/ /app/src/app/
 
+# Configuracion comun de rutas y umbrales. config.py toma como base la raiz
+# del repositorio, que dentro de la imagen es /app.
+COPY config.toml /app/config.toml
+COPY src/__init__.py src/config.py /app/src/
+
 # Configuracion de tema de la interfaz. Sin este fichero Streamlit aplica su
 # paleta por defecto, con el color primario en rojo.
 COPY .streamlit/ /app/.streamlit/
@@ -40,9 +45,8 @@ ARG URL_DATOS=https://github.com/SantosGGV/pharmasignal/releases/download/datos-
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/* && \
-    mkdir -p /root/pharmasignal && \
     curl -fsSL "$URL_DATOS" -o /tmp/datos.tar.gz && \
-    tar xzf /tmp/datos.tar.gz -C /root/pharmasignal && \
+    tar xzf /tmp/datos.tar.gz -C /app && \
     rm /tmp/datos.tar.gz && \
     apt-get purge -y curl && apt-get autoremove -y
 

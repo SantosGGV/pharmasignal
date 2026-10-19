@@ -36,7 +36,12 @@ memoria del proyecto.
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, when, lit
 from delta import configure_spark_with_delta_pip
-import os
+import sys
+from pathlib import Path
+
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
 
 builder = SparkSession.builder \
     .appName("PharmaSignal-Curación-Geografía") \
@@ -50,10 +55,10 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = os.path.expanduser("~/pharmasignal/data/curated")
+CURATED_PATH = config.RUTAS_CURATED
 
 # Trimestres afectados por la recodificación geográfica
-TRIMESTRES_RECODIFICADOS = ["2025q3", "2025q4"]
+TRIMESTRES_RECODIFICADOS = config.GEOGRAFIA_TRIMESTRES_RECODIFICADOS
 
 # Códigos que agrupan varios países y no permiten trazabilidad nacional
 CODIGOS_SUPRANACIONALES = ["EU"]

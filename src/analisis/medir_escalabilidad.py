@@ -25,15 +25,21 @@ Consideraciones metodológicas:
 import json
 import os
 import statistics
+import sys
 import threading
 import time
+from pathlib import Path
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import broadcast, col, countDistinct, lit
 from delta import configure_spark_with_delta_pip
 
-CURATED_PATH = os.path.expanduser("~/pharmasignal/data/curated")
-SALIDA = os.path.expanduser("~/pharmasignal/outputs/escalabilidad.json")
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
+
+CURATED_PATH = config.RUTAS_CURATED
+SALIDA = os.path.join(config.RUTAS_OUTPUTS, "escalabilidad.json")
 
 # Configuración del experimento. Se define como constantes para que las
 # decisiones queden explícitas y sean reproducibles.
@@ -49,7 +55,7 @@ VOLUMENES = [4, 8, 12, 16, 24]  # trimestres acumulados
 TRIMESTRES = [f"{a}q{q}" for a in range(2020, 2026) for q in range(1, 5)]
 
 # Umbrales del cálculo de señales, replicados de prr_ror.py.
-MIN_CASOS = 3
+MIN_CASOS = config.SENAL_CASOS_MIN
 
 
 class MonitorMemoria:

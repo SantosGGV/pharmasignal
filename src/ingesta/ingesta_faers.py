@@ -19,8 +19,13 @@ Las 7 tablas de FAERS son:
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import lit
 from delta import configure_spark_with_delta_pip
-import os
 import glob
+import sys
+from pathlib import Path
+
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
 
 builder = SparkSession.builder \
     .appName("PharmaSignal-Ingesta") \
@@ -34,8 +39,8 @@ spark = configure_spark_with_delta_pip(builder).getOrCreate()
 
 spark.sparkContext.setLogLevel("ERROR")
 
-RAW_PATH = os.path.expanduser("~/pharmasignal/data/raw")
-CURATED_PATH = os.path.expanduser("~/pharmasignal/data/curated")
+RAW_PATH = config.RUTAS_RAW
+CURATED_PATH = config.RUTAS_CURATED
 
 # Definimos las 7 tablas con su nombre y patrón de fichero
 TABLAS_FAERS = [

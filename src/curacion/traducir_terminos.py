@@ -1,9 +1,15 @@
 import os
+import sys
+from pathlib import Path
 import argostranslate.translate as tr
 import pandas as pd
 from deltalake import DeltaTable, write_deltalake
 
-CURATED = os.path.expanduser("~/pharmasignal/data/curated")
+# Raíz del repositorio en el sys.path para importar la configuración común.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
+
+CURATED = config.RUTAS_CURATED
 FUENTES = [("reac_curado", "pt_norm"), ("indi_curado", "indi_pt_norm")]
 
 terminos = set()

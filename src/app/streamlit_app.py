@@ -17,6 +17,8 @@ Los resultados se leen desde Delta Lake.
 # releer datos pesados de ahí el cacheo constante.
 
 import os
+import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -32,8 +34,12 @@ import consultas_explorador as ce
 
 # CONFIGURACIÓN GLOBAL
 # Se usa "~" para generar rutas globales independientemente desde el usuario que se ejecute
-CURATED = os.path.expanduser("~/pharmasignal/data/curated")
-DICC_DIR = os.path.expanduser("~/pharmasignal/data/diccionarios")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src import config
+
+CURATED = config.RUTAS_CURATED
+DICC_DIR = config.RUTAS_DICCIONARIOS
+MIN_CASOS_RESPALDO = config.INTERFAZ_MIN_CASOS_RESPALDO
 
 # Paleta de colores de la app
 BLUE = "#4F9BE8"
@@ -667,7 +673,7 @@ def vista_inicio():
             # tantas veces como reacciones tenga.
             reportes = int(res.groupby("drugname_norm")
                            .apply(lambda g: (g["a"] + g["b"]).max()).sum())
-            confirmadas = res[res["es_senal"] & (res["casos"] >= 20)]
+            confirmadas = res[res["es_senal"] & (res["casos"] >= MIN_CASOS_RESPALDO)]
 
             st.markdown("##### " + t(f"Resultados para «{q}»",
                                      f"Results for «{q}»"))
@@ -716,12 +722,12 @@ def vista_inicio():
                                   + t("notificaciones", "reports") + "<extra></extra>")
                 mostrar(eje_paises_grande(estilo_plotly(fig, 460)), key="ini_busca")
                 st.caption(t("Solo se muestran efectos que superan los criterios "
-                             "estadísticos de señal y con al menos 20 casos "
+                             f"estadísticos de señal y con al menos {MIN_CASOS_RESPALDO} casos "
                              "detrás. El número de veces compara la frecuencia "
                              "del efecto en este fármaco frente al resto de la "
                              "base de datos.",
                              "Only effects passing the statistical signal criteria "
-                             "with at least 20 cases are shown."))
+                             f"with at least {MIN_CASOS_RESPALDO} cases are shown."))
                 boton_csv(top[["pt_norm", "casos", "veces"]],
                           f"pharmasignal_{q.strip().lower()}.csv")
 
@@ -754,7 +760,7 @@ def vista_explorar(fam_id):
     sen["casos"] = (sen["a"] - 0.5).round().astype(int)
     # Me quedo solo con lo que es señal confirmada y con respaldo mínimo (>=20),
     # para no enseñar ruido en una vista pensada para usuarios no técnicos.
-    sen = sen[sen["es_senal"] & (sen["casos"] >= 20)]
+    sen = sen[sen["es_senal"] & (sen["casos"] >= MIN_CASOS_RESPALDO)]
 
     if not len(sen):
         st.info(t("No hay señales con respaldo suficiente para esta familia.",
@@ -845,7 +851,8 @@ def panel_senales():
     if ocultar:
         # Con poco fondo estadístico detrás, exijo un mínimo en las
         # otras casillas de la 2x2 para que la señal tenga cuerpo.
-        df = df[(df["c"] >= 100) & ((df["a"] + df["b"]) >= 200)]
+        df = df[(df["c"] >= config.LISTADOS_TRIVIAL_MIN_C)
+                & ((df["a"] + df["b"]) >= config.LISTADOS_TRIVIAL_MIN_REPORTES_FARMACO)]
     if qf.strip():
         df = df[df["drugname_norm"].str.contains(qf.strip().lower(), na=False)]
     if qr.strip():
@@ -937,7 +944,7 @@ def panel_geografico():
         mostrar(fig_mapa(perfil, col="pct_muertes", log=False,
                          escala=["#16324F", "#8B5A5A", "#E8746E"],
                          titulo="% " + t("muertes", "deaths"),
-                         min_reportes=5000), key="geo_mapa_mort")
+                         min_reportes=config.GEOGRAFIA_MIN_REPORTES_PAIS), key="geo_mapa_mort")
         st.caption(t("Porcentaje de notificaciones con desenlace mortal, solo en "
                      "países con al menos 5.000 reportes. Un porcentaje alto no "
                      "indica más riesgo, sino que en ese país se notifica "
@@ -962,7 +969,7 @@ def panel_geografico():
         st.markdown("##### " + t("Desenlaces mortales (≥5.000 reportes)",
                                  "Fatal outcomes (≥5,000 reports)"))
         if "pct_muertes" in perfil.columns:
-            mort = perfil[perfil["reportes"] >= 5000].nlargest(15, "pct_muertes")
+            mort = perfil[perfil["reportes"] >= config.GEOGRAFIA_MIN_REPORTES_PAIS].nlargest(15, "pct_muertes")
             fig = px.bar(mort.sort_values("pct_muertes"), x="pct_muertes",
                          y="pais", orientation="h",
                          labels={"pct_muertes": t("% muertes", "% deaths"),
@@ -1017,9 +1024,10 @@ def panel_geografico():
                                   "pct_es": t("% del total", "% of total")})
             fig.update_traces(line_color=BLUE)
             fig = estilo_plotly(fig, 460)
-            if (evo["trimestre"] == "2025q2").any():
-                fig.add_vline(x="2025q2", line_dash="dash", line_color=NEG)
-                fig.add_annotation(x="2025q2", y=evo["pct_es"].max(),
+            ultimo_es = config.GEOGRAFIA_ULTIMO_TRIMESTRE_ES
+            if (evo["trimestre"] == ultimo_es).any():
+                fig.add_vline(x=ultimo_es, line_dash="dash", line_color=NEG)
+                fig.add_annotation(x=ultimo_es, y=evo["pct_es"].max(),
                                    text="ES→EU", showarrow=False,
                                    font=dict(color=NEG, size=11), yshift=10)
             mostrar(fig, key="geo_evo")
@@ -1399,7 +1407,7 @@ def _desproporcion(farmaco, top):
     if not len(df):
         return df
     df["casos"] = (df["a"] - 0.5).round().astype(int)
-    df = df[df["es_senal"] & (df["casos"] >= 20)]
+    df = df[df["es_senal"] & (df["casos"] >= MIN_CASOS_RESPALDO)]
     if not len(df):
         return df
     agg = df.groupby("pt_norm").agg(
@@ -1873,9 +1881,9 @@ def crear_constructor():
         salida = desp[["pt_norm", "casos", "veces"]]
         mostrar(fig, key=f"cst_{que}_{desglose}_desp")
         st.caption(t("Solo efectos que superan los criterios estadísticos de "
-                     "señal y con al menos 20 casos detrás.",
+                     f"señal y con al menos {MIN_CASOS_RESPALDO} casos detrás.",
                      "Only effects passing the statistical signal criteria with "
-                     "at least 20 cases."))
+                     f"at least {MIN_CASOS_RESPALDO} cases."))
     else:
         datos, error = _consulta_cacheada(que, entidad, tipo_entidad,
                                           desglose, top)
