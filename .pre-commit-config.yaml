@@ -1,0 +1,41 @@
+# Instalación, una vez: pre-commit install && pre-commit install --hook-type prepare-commit-msg
+# Versiones: cada «rev: FIJAR» se sustituye por la última etiqueta estable (pre-commit autoupdate)
+# y se anota en la bitácora de la 0.12.
+# default_stages: sin él, todos los hooks se repetirían en la fase prepare-commit-msg.
+default_stages: [pre-commit]
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks-system   # usa el gitleaks instalado; si la versión fijada no lo trae, id: gitleaks
+        pass_filenames: false
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.4
+    hooks:
+      - id: bandit
+        args: ["-ll"]
+        files: ^src/
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.10.1
+    hooks:
+      - id: pip-audit
+        args: ["-r", "requirements.txt"]   # el fichero de requisitos que use el repo
+        files: ^requirements.*\.txt$        # solo cuando cambian; la auditoría periódica va en CI (3.6)
+  - repo: local
+    hooks:
+      - id: terminos-prohibidos
+        name: Términos de la lista privada
+        entry: scripts/git/terminos_prohibidos.sh
+        language: script
+        pass_filenames: false
+      - id: pruebas
+        name: pytest
+        entry: scripts/git/pruebas.sh
+        language: script
+        pass_filenames: false
+        files: ^(src/|tests/|config\.toml$|\.claude/hooks/|scripts/git/)
+      - id: prefijo-tarea
+        name: Id de la tarea en el mensaje
+        entry: scripts/git/prefijo_tarea.sh
+        language: script
+        stages: [prepare-commit-msg]

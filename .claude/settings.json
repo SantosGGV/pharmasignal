@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pytest)",
+      "Bash(pytest *)",
+      "Bash(python -m pytest *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch --show-current)",
+      "Bash(git worktree list)",
+      "Bash(pre-commit run *)",
+      "Bash(bandit *)",
+      "Bash(pip-audit *)",
+      "Bash(gitleaks *)",
+      "Bash(scripts/git/terminos_prohibidos.sh *)",
+      "Read(~/pharmasignal_privado/hoja_de_ruta.md)"
+    ],
+    "ask": [
+      "Bash(rm *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git checkout -b *)",
+      "Bash(git switch -c *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(git reset *)",
+      "Bash(git worktree add *)",
+      "Bash(pip install *)",
+      "Bash(python -m pip install *)",
+      "Bash(sudo *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./.streamlit/secrets.toml)",
+      "Read(~/pharmasignal_privado/terminos_prohibidos.txt)",
+      "Read(~/pharmasignal_privado/horas.csv)",
+      "Read(~/.ssh/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.git-credentials)",
+      "Read(~/.netrc)",
+      "Edit(./data/raw/**)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git commit --no-verify *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/contexto_sesion.sh\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/exigir_bitacora.py\""
+          }
+        ]
+      }
+    ]
+  }
+}
