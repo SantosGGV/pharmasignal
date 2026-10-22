@@ -15,6 +15,7 @@ raw = "data/raw"
 curated = "data/curated"
 diccionarios = "data/diccionarios"
 outputs = "outputs"
+logs = "outputs/logs"
 
 [senal]
 # Criterio de señal de Evans et al. (2001): PRR >= 2, a >= 3 y chi2 >= 4.
@@ -54,3 +55,80 @@ trimestres_recodificados = ["2025q3", "2025q4"]
 min_reportes_farmaco = 5000
 min_casos_reaccion = 1000
 min_reportes_pais = 10000
+
+[lanzador]
+# Usados en src/lanzador.py. El candado es único para toda la máquina (no por
+# base ni por worktree), para que nunca corran dos ejecuciones de Spark a la vez.
+candado = "~/.cache/pharmasignal/pipeline.lock"
+# Espacio libre mínimo, en GB, en la partición de la base y en la temporal de
+# Spark. Es un suelo estimado, no medido. En WSL2 el disco virtual aparenta más
+# espacio del que hay: manda el libre del disco de Windows (df -h /mnt/c).
+espacio_min_gb = 25
+# Discos que también se miden si existen. En WSL2 el disco de Linux es virtual
+# y se guarda en C:, así que el que se llena de verdad es /mnt/c. Se exige el
+# mínimo en el disco con menos espacio libre.
+discos_extra = ["/mnt/c"]
+# Segundos que se espera a un script tras pedirle que pare (Ctrl+C o SIGTERM)
+# antes de matarlo con SIGKILL, junto con la JVM de Spark.
+espera_terminar_s = 30
+
+# Fases del pipeline, en su orden obligatorio. Los scripts van relativos a la
+# raíz del repositorio y se ejecutan en el orden de la lista. entrada y salida
+# son claves de [rutas], no nombres de tablas. escribe_tablas indica si la fase
+# escribe tablas Delta: sobre la base del repositorio exige --confirmar.
+[[lanzador.fases]]
+nombre = "ingesta"
+scripts = ["src/ingesta/ingesta_faers.py"]
+entrada = ["raw"]
+salida = ["curated"]
+escribe_tablas = true
+
+[[lanzador.fases]]
+nombre = "curacion"
+# curar_demo.py va primero: los demás leen demo_curado.
+scripts = [
+    "src/curacion/curar_demo.py",
+    "src/curacion/curar_drug.py",
+    "src/curacion/curar_reac.py",
+    "src/curacion/curar_outc.py",
+    "src/curacion/curar_indi.py",
+    "src/curacion/curar_ther.py",
+    "src/curacion/curar_rpsr.py",
+    "src/curacion/curar_geografia.py",
+]
+entrada = ["curated"]
+salida = ["curated"]
+escribe_tablas = true
+
+[[lanzador.fases]]
+nombre = "validacion"
+scripts = ["src/curacion/validar_curacion.py"]
+entrada = ["curated"]
+salida = []
+escribe_tablas = false
+
+[[lanzador.fases]]
+nombre = "analisis"
+# prr_ror.py va primero: analisis_geografico.py lee senales_prr_ror.
+scripts = [
+    "src/analisis/prr_ror.py",
+    "src/analisis/analisis_geografico.py",
+    "src/analisis/analisis_temporal.py",
+    "src/analisis/analisis_explorador.py",
+    "src/analisis/analisis_explorador_cruces.py",
+]
+entrada = ["curated"]
+salida = ["curated"]
+escribe_tablas = true
+
+[[lanzador.fases]]
+nombre = "control"
+scripts = ["src/analisis/validar_senales.py"]
+entrada = ["curated"]
+salida = ["outputs"]
+escribe_tablas = false
+
+# Scripts que el lanzador no ejecuta. --lista avisa de ellos.
+[[lanzador.fuera]]
+script = "src/curacion/traducir_terminos.py"
+motivo = "escribe trad_terminos con argostranslate, que no está en requirements.txt (hasta la 0.7). Tras reconstruir, copia la tabla desde la base actual"

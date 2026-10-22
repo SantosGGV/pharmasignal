@@ -23,6 +23,7 @@ __pycache__/
 *.pyc
 
 outputs/*.txt
+outputs/logs/
 
 docker/*.tar.gz
 
