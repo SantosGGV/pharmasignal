@@ -73,18 +73,14 @@
 
 ## Configuración
 - Umbrales y rutas en `config.toml`, leídos con `src/config.py`, que los expone con el prefijo de su sección (por ejemplo, `config.SENAL_PRR_MIN`). `PHARMASIGNAL_BASE` cambia la raíz de los datos (worktrees y Docker).
-- Secciones: `[rutas]` (raw, curated, diccionarios y outputs); `[senal]` (prr_min 2.0, casos_min 3, chi2_min 4.0 y ror_ic_inf_umbral 1.0); `[interfaz]` (min_casos_respaldo 20); `[listados]` (trivial_min_c 100 y trivial_min_reportes_farmaco 200); `[geografia]` (min_casos_es 5, min_casos_global 20, min_casos_divergencia 30, min_global_divergencia 150, min_reportes_pais 5000, último trimestre de España 2025q2 y trimestres recodificados 2025q3 y 2025q4); `[explorador]` (min_reportes_farmaco 5000, min_casos_reaccion 1000 y min_reportes_pais 10000).
+- Secciones: `[rutas]` (raw, curated, diccionarios, outputs y logs); `[senal]` (prr_min 2.0, casos_min 3, chi2_min 4.0 y ror_ic_inf_umbral 1.0); `[interfaz]` (min_casos_respaldo 20); `[listados]` (trivial_min_c 100 y trivial_min_reportes_farmaco 200); `[geografia]` (min_casos_es 5, min_casos_global 20, min_casos_divergencia 30, min_global_divergencia 150, min_reportes_pais 5000, último trimestre de España 2025q2 y trimestres recodificados 2025q3 y 2025q4); `[explorador]` (min_reportes_farmaco 5000, min_casos_reaccion 1000 y min_reportes_pais 10000); `[lanzador]` (candado en `~/.cache/pharmasignal/pipeline.lock`, espacio_min_gb 25 en el disco con menos libre entre la base, la temporal y `discos_extra` (`/mnt/c`, el que se llena de verdad en WSL2), espera_terminar_s 30, las cinco `[[lanzador.fases]]` con sus scripts y claves de `[rutas]`, y `[[lanzador.fuera]]` con `traducir_terminos.py`).
 - Si esta sección no coincide con lo que dejó la tarea 0.2, manda el código: corrígela aquí.
 
 ## Comandos
 - Entorno: `source .venv/bin/activate`
 - Pruebas: `pytest tests/ -v`. El CI (`.github/workflows/pruebas.yml`) instala solo pytest y pyspark.
 - Calidad antes del commit: `pre-commit run --all-files`
-- Pipeline, en este orden obligatorio (hasta que exista el lanzador de la 0.3):
-  1. `python src/ingesta/ingesta_faers.py`
-  2. `python src/curacion/curar_demo.py`, `curar_drug.py`, `curar_reac.py`, `curar_outc.py`, `curar_indi.py`, `curar_ther.py`, `curar_rpsr.py` y `curar_geografia.py`
-  3. `python src/curacion/validar_curacion.py`
-  4. `python src/analisis/prr_ror.py`, `analisis_geografico.py`, `analisis_temporal.py`, `analisis_explorador.py` y `analisis_explorador_cruces.py`
+- Pipeline, siempre con el lanzador (0.3): `python src/lanzador.py --lista` (plan, sin ejecutar), `todo`, `--desde <fase>` o `--solo <fase>`. Las fases, en su orden obligatorio, son `ingesta`, `curacion`, `validacion`, `analisis` y `control`, y se declaran en `config.toml`. Sobre la base del repositorio, las fases que escriben tablas piden `--confirmar`; para reconstruir sin pisar los datos, base aparte con `PHARMASIGNAL_BASE`. Logs en `outputs/logs/`. Códigos de salida: el del script que falle, 2 (uso o comprobaciones previas), 75 (candado ocupado) y 130 (interrumpido). `traducir_terminos.py` queda fuera hasta la 0.7.
 - Interfaz: `streamlit run src/app/streamlit_app.py`
 - Docker, solo la interfaz: `docker build -f docker/Dockerfile -t pharmasignal:1.0 .` y `docker run --rm -p 8501:8501 pharmasignal:1.0`. Los datos de demo se descargan de la release `datos-demo` de GitHub; `docker/preparar_demo.sh` regenera ese paquete. El `.dockerignore` va en la raíz del repo.
 - Otra tarea en paralelo: `git worktree add ../pharmasignal-<id> -b faseN/<id>-<nombre>`, `cd` allí, `source ~/pharmasignal/.venv/bin/activate` y `claude`. El worktree usa el entorno virtual y los datos del principal (`PHARMASIGNAL_BASE`).
@@ -94,7 +90,7 @@
 - `src/curacion` (12): un `curar_*.py` por tabla, `curar_geografia.py`, `traducir_terminos.py`, `validar_curacion.py` y dos diagnósticos de geografía.
 - `src/analisis` (8): `prr_ror.py`, `analisis_geografico.py`, `analisis_temporal.py`, `analisis_explorador.py`, `analisis_explorador_cruces.py`, `familias.py`, `validar_senales.py` y `medir_escalabilidad.py`.
 - `src/app` (2): `streamlit_app.py` y `consultas_explorador.py`.
-- `src/config.py` y `config.toml` (0.2); `tests/` con `test_prr_ror.py` y las pruebas de los hooks (`test_hooks_commit.py` y `test_hooks_agentes.py`).
+- `src/config.py` y `config.toml` (0.2); `src/lanzador.py` (0.3); `tests/` con `test_prr_ror.py`, `test_lanzador.py` y las pruebas de los hooks (`test_hooks_commit.py` y `test_hooks_agentes.py`).
 - `docs/bitacora`, `docs/decisiones` y `docs/img`; `CHANGELOG.md`.
 - `.claude/agents`, `.claude/skills/tarea`, `.claude/hooks` y `.claude/settings.json`; `scripts/git` (hooks de pre-commit); `.pre-commit-config.yaml`.
 
@@ -106,7 +102,7 @@
   - Bronce (7): `demo`, `drug`, `indi`, `outc`, `reac`, `rpsr`, `ther`.
   - Plata (9): los 7 `*_curado`, `demo_geo` y `trad_terminos`.
   - Oro (24): `senales_prr_ror`; `serie_temporal_familias` y `serie_temporal_glp1_farmacos`; 7 tablas `geo_*` (`geo_senales_espana` está retirada del catálogo «Conjuntos listos»); y las 14 `expl_*` del constructor.
-- `outputs/`: logs y mediciones. En Git solo están `escalabilidad.json` y `validacion_senales.csv`.
+- `outputs/`: logs (`outputs/logs/`, del lanzador) y mediciones. En Git solo están `escalabilidad.json` y `validacion_senales.csv`.
 
 ## Método (no se cambia sin una tarea explícita)
 - Criterio de señal: PRR ≥ 2, a ≥ 3 y χ² ≥ 4, con corrección de Haldane-Anscombe (+0,5 en las cuatro casillas, siempre).
