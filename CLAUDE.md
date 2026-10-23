@@ -73,7 +73,7 @@
 
 ## Configuración
 - Umbrales y rutas en `config.toml`, leídos con `src/config.py`, que los expone con el prefijo de su sección (por ejemplo, `config.SENAL_PRR_MIN`). `PHARMASIGNAL_BASE` cambia la raíz de los datos (worktrees y Docker).
-- Secciones: `[rutas]` (raw, curated, diccionarios, outputs y logs); `[senal]` (prr_min 2.0, casos_min 3, chi2_min 4.0 y ror_ic_inf_umbral 1.0); `[interfaz]` (min_casos_respaldo 20); `[listados]` (trivial_min_c 100 y trivial_min_reportes_farmaco 200); `[geografia]` (min_casos_es 5, min_casos_global 20, min_casos_divergencia 30, min_global_divergencia 150, min_reportes_pais 5000, último trimestre de España 2025q2 y trimestres recodificados 2025q3 y 2025q4); `[explorador]` (min_reportes_farmaco 5000, min_casos_reaccion 1000 y min_reportes_pais 10000); `[lanzador]` (candado en `~/.cache/pharmasignal/pipeline.lock`, espacio_min_gb 25 en el disco con menos libre entre la base, la temporal y `discos_extra` (`/mnt/c`, el que se llena de verdad en WSL2), espera_terminar_s 30, las cinco `[[lanzador.fases]]` con sus scripts y claves de `[rutas]`, y `[[lanzador.fuera]]` con `traducir_terminos.py`).
+- Secciones: `[rutas]` (raw, bronce, plata, oro, diccionarios, outputs y logs, y curated solo para `migrar_capas.py` hasta la 0.9); `[senal]` (prr_min 2.0, casos_min 3, chi2_min 4.0 y ror_ic_inf_umbral 1.0); `[interfaz]` (min_casos_respaldo 20); `[listados]` (trivial_min_c 100 y trivial_min_reportes_farmaco 200); `[geografia]` (min_casos_es 5, min_casos_global 20, min_casos_divergencia 30, min_global_divergencia 150, min_reportes_pais 5000, último trimestre de España 2025q2 y trimestres recodificados 2025q3 y 2025q4); `[explorador]` (min_reportes_farmaco 5000, min_casos_reaccion 1000 y min_reportes_pais 10000); `[lanzador]` (candado en `~/.cache/pharmasignal/pipeline.lock`, espacio_min_gb 25 en el disco con menos libre entre la base, la temporal y `discos_extra` (`/mnt/c`, el que se llena de verdad en WSL2), espera_terminar_s 30, las cinco `[[lanzador.fases]]` con sus scripts y claves de `[rutas]`, y `[[lanzador.fuera]]` con `traducir_terminos.py`).
 - Si esta sección no coincide con lo que dejó la tarea 0.2, manda el código: corrígela aquí.
 
 ## Comandos
@@ -82,7 +82,7 @@
 - Calidad antes del commit: `pre-commit run --all-files`
 - Pipeline, siempre con el lanzador (0.3): `python src/lanzador.py --lista` (plan, sin ejecutar), `todo`, `--desde <fase>` o `--solo <fase>`. Las fases, en su orden obligatorio, son `ingesta`, `curacion`, `validacion`, `analisis` y `control`, y se declaran en `config.toml`. Sobre la base del repositorio, las fases que escriben tablas piden `--confirmar`; para reconstruir sin pisar los datos, base aparte con `PHARMASIGNAL_BASE`. Logs en `outputs/logs/`. Códigos de salida: el del script que falle, 2 (uso o comprobaciones previas), 75 (candado ocupado) y 130 (interrumpido). `traducir_terminos.py` queda fuera hasta la 0.7.
 - Interfaz: `streamlit run src/app/streamlit_app.py`
-- Docker, solo la interfaz: `docker build -f docker/Dockerfile -t pharmasignal:1.0 .` y `docker run --rm -p 8501:8501 pharmasignal:1.0`. Los datos de demo se descargan de la release `datos-demo` de GitHub; `docker/preparar_demo.sh` regenera ese paquete. El `.dockerignore` va en la raíz del repo.
+- Docker, solo la interfaz: `docker build -f docker/Dockerfile -t pharmasignal:1.0 .` y `docker run --rm -p 8501:8501 pharmasignal:1.0`. Los datos de demo se descargan de la release `datos-demo-v2` de GitHub, con la estructura por capas; `docker/preparar_demo.sh` regenera ese paquete. `datos-demo` (estructura vieja) no se borra: la usa la imagen de `v1.0-tfb`. Cada cambio de datos publica una release con el número siguiente. El `.dockerignore` va en la raíz del repo.
 - Otra tarea en paralelo: `git worktree add ../pharmasignal-<id> -b faseN/<id>-<nombre>`, `cd` allí, `source ~/pharmasignal/.venv/bin/activate` y `claude`. El worktree usa el entorno virtual y los datos del principal (`PHARMASIGNAL_BASE`).
 
 ## Estructura
@@ -90,7 +90,7 @@
 - `src/curacion` (12): un `curar_*.py` por tabla, `curar_geografia.py`, `traducir_terminos.py`, `validar_curacion.py` y dos diagnósticos de geografía.
 - `src/analisis` (8): `prr_ror.py`, `analisis_geografico.py`, `analisis_temporal.py`, `analisis_explorador.py`, `analisis_explorador_cruces.py`, `familias.py`, `validar_senales.py` y `medir_escalabilidad.py`.
 - `src/app` (2): `streamlit_app.py` y `consultas_explorador.py`.
-- `src/config.py` y `config.toml` (0.2); `src/lanzador.py` (0.3); `tests/` con `test_prr_ror.py`, `test_lanzador.py` y las pruebas de los hooks (`test_hooks_commit.py` y `test_hooks_agentes.py`).
+- `src/config.py` y `config.toml` (0.2); `src/lanzador.py` (0.3); `src/migrar_capas.py` (0.11, traslado de un solo uso de `data/curated` a las capas, con `--confirmar` y `--revertir`); `tests/` con `test_prr_ror.py`, `test_lanzador.py`, `test_capas.py` y las pruebas de los hooks (`test_hooks_commit.py` y `test_hooks_agentes.py`).
 - `docs/bitacora`, `docs/decisiones` y `docs/img`; `CHANGELOG.md`.
 - `.claude/agents`, `.claude/skills/tarea`, `.claude/hooks` y `.claude/settings.json`; `scripts/git` (hooks de pre-commit); `.pre-commit-config.yaml`.
 
@@ -98,10 +98,10 @@
 - `data/raw/`: 24 carpetas, de `faers_ascii_2020q1` a `faers_ascii_2025q4`. Cada una tiene `ASCII/` con las 7 tablas y una carpeta `Deleted` o `DELETED` con los casos eliminados por la FDA, en cuatro formatos de nombre (se aplican en la 1.0). `integridad_faers.sha256` usa rutas relativas a `data/raw`.
 - Desde el 11/03/2026 la FDA publica FAERS como AEMS. Los extractos trimestrales siguen en el mismo ASCII; 2026Q1 y 2026Q2 ya están publicados y se cargan en la 3.1.
 - `data/diccionarios/`: `paises.txt` y `terminos_es.txt`.
-- `data/curated/`: 40 tablas Delta (se separan por capas en la 0.11).
-  - Bronce (7): `demo`, `drug`, `indi`, `outc`, `reac`, `rpsr`, `ther`.
-  - Plata (9): los 7 `*_curado`, `demo_geo` y `trad_terminos`.
-  - Oro (24): `senales_prr_ror`; `serie_temporal_familias` y `serie_temporal_glp1_farmacos`; 7 tablas `geo_*` (`geo_senales_espana` está retirada del catálogo «Conjuntos listos»); y las 14 `expl_*` del constructor.
+- Tablas Delta por capas (0.11), 40 en total; cada fase lee la capa anterior y escribe la suya:
+  - `data/bronce/` (7, ingesta): `demo`, `drug`, `indi`, `outc`, `reac`, `rpsr`, `ther`.
+  - `data/plata/` (9, curación): los 7 `*_curado`, `demo_geo` y `trad_terminos`.
+  - `data/oro/` (24, análisis; la temporal `_tmp_expl_cruce` también va aquí): `senales_prr_ror`; `serie_temporal_familias` y `serie_temporal_glp1_farmacos`; 7 tablas `geo_*` (`geo_senales_espana` está retirada del catálogo «Conjuntos listos»); y las 14 `expl_*` del constructor.
 - `outputs/`: logs (`outputs/logs/`, del lanzador) y mediciones. En Git solo están `escalabilidad.json` y `validacion_senales.csv`.
 
 ## Método (no se cambia sin una tarea explícita)

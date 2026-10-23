@@ -47,7 +47,7 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+PLATA_PATH = config.RUTAS_PLATA
 
 # Volumetría de los datos en crudo, para calcular la reducción por curación
 CRUDO = {
@@ -61,13 +61,13 @@ CRUDO = {
 }
 
 # Cargamos las tablas curadas
-demo = spark.read.format("delta").load(f"{CURATED_PATH}/demo_geo")
-drug = spark.read.format("delta").load(f"{CURATED_PATH}/drug_curado")
-reac = spark.read.format("delta").load(f"{CURATED_PATH}/reac_curado")
-outc = spark.read.format("delta").load(f"{CURATED_PATH}/outc_curado")
-indi = spark.read.format("delta").load(f"{CURATED_PATH}/indi_curado")
-ther = spark.read.format("delta").load(f"{CURATED_PATH}/ther_curado")
-rpsr = spark.read.format("delta").load(f"{CURATED_PATH}/rpsr_curado")
+demo = spark.read.format("delta").load(f"{PLATA_PATH}/demo_geo")
+drug = spark.read.format("delta").load(f"{PLATA_PATH}/drug_curado")
+reac = spark.read.format("delta").load(f"{PLATA_PATH}/reac_curado")
+outc = spark.read.format("delta").load(f"{PLATA_PATH}/outc_curado")
+indi = spark.read.format("delta").load(f"{PLATA_PATH}/indi_curado")
+ther = spark.read.format("delta").load(f"{PLATA_PATH}/ther_curado")
+rpsr = spark.read.format("delta").load(f"{PLATA_PATH}/rpsr_curado")
 
 tablas_detalle = {
     "drug": drug,

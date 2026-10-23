@@ -21,6 +21,11 @@ repos:
       - id: pip-audit
         args: ["-r", "requirements.txt"]   # el fichero de requisitos que use el repo
         files: ^requirements.*\.txt$        # solo cuando cambian; la auditoría periódica va en CI (3.6)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]   # deja pasar las capturas de docs/img; los datos van ignorados
   - repo: local
     hooks:
       - id: terminos-prohibidos
