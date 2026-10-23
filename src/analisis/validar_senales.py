@@ -25,7 +25,7 @@ from deltalake import DeltaTable
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from src import config
 
-CURATED = config.RUTAS_CURATED
+ORO = config.RUTAS_ORO
 SALIDA = os.path.join(config.RUTAS_OUTPUTS, "validacion_senales.csv")
 
 # Respaldo minimo exigido para considerar una senal detectada. Es el mismo
@@ -73,7 +73,7 @@ def evaluar(senales, farmaco, reaccion):
     }
 
 def main():
-    senales = DeltaTable(f"{CURATED}/senales_prr_ror").to_pandas()
+    senales = DeltaTable(f"{ORO}/senales_prr_ror").to_pandas()
     # La columna "A" incorpora la correccion de Haldane-Anscombe, medio caso por
     # casilla, que se descuenta para recuperar el recuento real.
     senales["casos"] = (senales["a"] - 0.5).round().astype(int)

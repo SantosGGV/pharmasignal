@@ -57,7 +57,8 @@ spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
 # Ruta donde residen las tablas curadas en formato Delta Lake.
-CURATED_PATH = config.RUTAS_CURATED
+PLATA_PATH = config.RUTAS_PLATA
+ORO_PATH = config.RUTAS_ORO
 
 # Se trata del órden cronológico de los 24 trimestres. Aunque el nombre de trimestre por defecto
 # ya ordena bien alfabéticamente, se mantiene esta lista como referencia.
@@ -74,8 +75,8 @@ print("\nCargando datos curados...")
 
 # DEMO curado aporta la relación reporte -> trimestre
 # DRUG curado aporta la relación reporte -> fármaco.
-demo = spark.read.format("delta").load(f"{CURATED_PATH}/demo_curado")
-drug = spark.read.format("delta").load(f"{CURATED_PATH}/drug_curado")
+demo = spark.read.format("delta").load(f"{PLATA_PATH}/demo_curado")
+drug = spark.read.format("delta").load(f"{PLATA_PATH}/drug_curado")
 
 # Nos quedamos solo con el fármaco sospechoso primario, ya que es el fármaco que la
 # notificación señala como causa probable del evento.
@@ -259,11 +260,11 @@ serie_por_farmaco.select("drugname_norm").distinct().orderBy("drugname_norm") \
 # se añaden las cuatro columnas nuevas de las series de gripe y VRS.
 series_consolidadas.write.format("delta").mode("overwrite") \
     .option("overwriteSchema", "true") \
-    .save(f"{CURATED_PATH}/serie_temporal_familias")
+    .save(f"{ORO_PATH}/serie_temporal_familias")
 
 serie_por_farmaco.write.format("delta").mode("overwrite") \
     .option("overwriteSchema", "true") \
-    .save(f"{CURATED_PATH}/serie_temporal_glp1_farmacos")
+    .save(f"{ORO_PATH}/serie_temporal_glp1_farmacos")
 
 print("\nSeries temporales guardadas en Delta Lake.")
 

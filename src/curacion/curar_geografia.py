@@ -55,7 +55,7 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+PLATA_PATH = config.RUTAS_PLATA
 
 # Trimestres afectados por la recodificación geográfica
 TRIMESTRES_RECODIFICADOS = config.GEOGRAFIA_TRIMESTRES_RECODIFICADOS
@@ -66,7 +66,7 @@ CODIGOS_SUPRANACIONALES = ["EU"]
 # Códigos sin información geográfica utilizable
 CODIGOS_NO_ESPECIFICADOS = ["COUNTRY NOT SPECIFIED", "A1"]
 
-demo = spark.read.format("delta").load(f"{CURATED_PATH}/demo_curado")
+demo = spark.read.format("delta").load(f"{PLATA_PATH}/demo_curado")
 total = demo.count()
 print(f"\nRegistros DEMO curado: {total:,}")
 
@@ -140,7 +140,7 @@ print(f"\nTotal de reportes de España analizables: {es_total:,}")
 
 
 # Guardamos DEMO con la dimensión geográfica curada
-ruta_salida = f"{CURATED_PATH}/demo_geo"
+ruta_salida = f"{PLATA_PATH}/demo_geo"
 demo_geo.write \
     .format("delta") \
     .mode("overwrite") \

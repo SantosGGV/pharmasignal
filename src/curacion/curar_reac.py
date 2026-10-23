@@ -43,16 +43,17 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+BRONCE_PATH = config.RUTAS_BRONCE
+PLATA_PATH = config.RUTAS_PLATA
 
 # Cargamos REAC desde Delta Lake
-reac = spark.read.format("delta").load(f"{CURATED_PATH}/reac")
+reac = spark.read.format("delta").load(f"{BRONCE_PATH}/reac")
 total_inicial = reac.count()
 print(f"\nRegistros iniciales REAC: {total_inicial:,}")
 
 # Cargamos DEMO curado para alinear por primaryid
 demo_curado = spark.read.format("delta") \
-    .load(f"{CURATED_PATH}/demo_curado")
+    .load(f"{PLATA_PATH}/demo_curado")
 primaryids_validos = demo_curado.select("primaryid").distinct()
 
 # Regla 1. Alineación con DEMO curado
@@ -100,7 +101,7 @@ reac_limpio.groupBy("pt_norm").count() \
     .show(20, truncate=False)
 
 # Guardamos REAC curado en Delta Lake
-ruta_salida = f"{CURATED_PATH}/reac_curado"
+ruta_salida = f"{PLATA_PATH}/reac_curado"
 reac_limpio.write \
     .format("delta") \
     .mode("overwrite") \

@@ -12,6 +12,12 @@
 # Relativas a la base del proyecto. La base es la raíz del repositorio, salvo
 # que se defina la variable de entorno PHARMASIGNAL_BASE.
 raw = "data/raw"
+# Capas (0.11): bronce, la ingesta tal cual; plata, las tablas curadas; oro, los
+# resultados del análisis que lee la interfaz.
+bronce = "data/bronce"
+plata = "data/plata"
+oro = "data/oro"
+# Carpeta anterior a las capas. Solo la usa src/migrar_capas.py; se retira en la 0.9.
 curated = "data/curated"
 diccionarios = "data/diccionarios"
 outputs = "outputs"
@@ -80,7 +86,7 @@ espera_terminar_s = 30
 nombre = "ingesta"
 scripts = ["src/ingesta/ingesta_faers.py"]
 entrada = ["raw"]
-salida = ["curated"]
+salida = ["bronce"]
 escribe_tablas = true
 
 [[lanzador.fases]]
@@ -96,14 +102,14 @@ scripts = [
     "src/curacion/curar_rpsr.py",
     "src/curacion/curar_geografia.py",
 ]
-entrada = ["curated"]
-salida = ["curated"]
+entrada = ["bronce"]
+salida = ["plata"]
 escribe_tablas = true
 
 [[lanzador.fases]]
 nombre = "validacion"
 scripts = ["src/curacion/validar_curacion.py"]
-entrada = ["curated"]
+entrada = ["plata"]
 salida = []
 escribe_tablas = false
 
@@ -117,18 +123,18 @@ scripts = [
     "src/analisis/analisis_explorador.py",
     "src/analisis/analisis_explorador_cruces.py",
 ]
-entrada = ["curated"]
-salida = ["curated"]
+entrada = ["plata"]
+salida = ["oro"]
 escribe_tablas = true
 
 [[lanzador.fases]]
 nombre = "control"
 scripts = ["src/analisis/validar_senales.py"]
-entrada = ["curated"]
+entrada = ["oro"]
 salida = ["outputs"]
 escribe_tablas = false
 
 # Scripts que el lanzador no ejecuta. --lista avisa de ellos.
 [[lanzador.fuera]]
 script = "src/curacion/traducir_terminos.py"
-motivo = "escribe trad_terminos con argostranslate, que no está en requirements.txt (hasta la 0.7). Tras reconstruir, copia la tabla desde la base actual"
+motivo = "escribe trad_terminos con argostranslate, que no está en requirements.txt (hasta la 0.7). Para reconstruir en una base aparte, copia antes la tabla a su data/plata desde la base actual"

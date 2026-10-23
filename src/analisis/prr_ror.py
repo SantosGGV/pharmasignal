@@ -64,7 +64,8 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+PLATA_PATH = config.RUTAS_PLATA
+ORO_PATH = config.RUTAS_ORO
 
 # Umbrales de señal según el criterio marcado por Evans et al. (2001)
 UMBRAL_PRR = config.SENAL_PRR_MIN
@@ -73,8 +74,8 @@ UMBRAL_CHI2 = config.SENAL_CHI2_MIN
 
 print("\nCargando datos curados...")
 
-drug = spark.read.format("delta").load(f"{CURATED_PATH}/drug_curado")
-reac = spark.read.format("delta").load(f"{CURATED_PATH}/reac_curado")
+drug = spark.read.format("delta").load(f"{PLATA_PATH}/drug_curado")
+reac = spark.read.format("delta").load(f"{PLATA_PATH}/reac_curado")
 
 # Trabajamos únicamente con el fármaco sospechoso primario (PS),
 # que es el que la notificación señala como causa probable del evento.
@@ -269,7 +270,7 @@ senales.filter(
     .show(25, truncate=False)
 
 # Guardamos el ranking completo de señales en Delta Lake
-ruta_salida = f"{CURATED_PATH}/senales_prr_ror"
+ruta_salida = f"{ORO_PATH}/senales_prr_ror"
 senales.select(
         "drugname_norm", "pt_norm",
         "a", "b", "c", "d",

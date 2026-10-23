@@ -34,16 +34,17 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+BRONCE_PATH = config.RUTAS_BRONCE
+PLATA_PATH = config.RUTAS_PLATA
 
 # Cargamos INDI desde Delta Lake
-indi = spark.read.format("delta").load(f"{CURATED_PATH}/indi")
+indi = spark.read.format("delta").load(f"{BRONCE_PATH}/indi")
 total_inicial = indi.count()
 print(f"\nRegistros iniciales INDI: {total_inicial:,}")
 
 # Cargamos DEMO curado para alinear por primaryid
 demo_curado = spark.read.format("delta") \
-    .load(f"{CURATED_PATH}/demo_curado")
+    .load(f"{PLATA_PATH}/demo_curado")
 primaryids_validos = demo_curado.select("primaryid").distinct()
 
 # Regla 1. Alineación con DEMO curado
@@ -87,7 +88,7 @@ indi_limpio.groupBy("indi_pt_norm").count() \
     .show(20, truncate=False)
 
 # Guardamos INDI curado en Delta Lake
-ruta_salida = f"{CURATED_PATH}/indi_curado"
+ruta_salida = f"{PLATA_PATH}/indi_curado"
 indi_limpio.write \
     .format("delta") \
     .mode("overwrite") \

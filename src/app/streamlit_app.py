@@ -37,7 +37,8 @@ import consultas_explorador as ce
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from src import config
 
-CURATED = config.RUTAS_CURATED
+PLATA = config.RUTAS_PLATA
+ORO = config.RUTAS_ORO
 DICC_DIR = config.RUTAS_DICCIONARIOS
 MIN_CASOS_RESPALDO = config.INTERFAZ_MIN_CASOS_RESPALDO
 
@@ -176,8 +177,8 @@ OUTC_ES = {"DE": "Muerte", "LT": "Riesgo vital", "HO": "Hospitalización",
 # Con el decorador, Streamlit guarda el resultado y solo vuelve a leer si
 # cambian los argumentos de la función.
 @st.cache_data(show_spinner=False)
-def cargar(tabla: str):
-    ruta = f"{CURATED}/{tabla}"
+def cargar(tabla: str, capa: str = ORO):
+    ruta = f"{capa}/{tabla}"
     if not os.path.isdir(ruta):
         return None
     try:
@@ -243,7 +244,7 @@ def cargar_trad_delta():
     # Aparte del diccionario manual, hay una tabla Delta con traducciones
     # generadas automáticamente (argos-translate) mencionada en el stack de la memoria.
     # Si existe y trae las columnas esperadas, la convierto en un dict term_en → term_es.
-    ext = cargar("trad_terminos")
+    ext = cargar("trad_terminos", PLATA)
     if ext is not None and {"term_en", "term_es"} <= set(ext.columns):
         return dict(zip(ext["term_en"].astype(str).str.lower(),
                         ext["term_es"].astype(str)))

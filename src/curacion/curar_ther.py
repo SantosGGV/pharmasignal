@@ -37,16 +37,17 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+BRONCE_PATH = config.RUTAS_BRONCE
+PLATA_PATH = config.RUTAS_PLATA
 
 # Cargamos THER desde Delta Lake
-ther = spark.read.format("delta").load(f"{CURATED_PATH}/ther")
+ther = spark.read.format("delta").load(f"{BRONCE_PATH}/ther")
 total_inicial = ther.count()
 print(f"\nRegistros iniciales THER: {total_inicial:,}")
 
 # Cargamos DEMO curado para alinear por primaryid
 demo_curado = spark.read.format("delta") \
-    .load(f"{CURATED_PATH}/demo_curado")
+    .load(f"{PLATA_PATH}/demo_curado")
 primaryids_validos = demo_curado.select("primaryid").distinct()
 
 # Regla 1. Alineación con DEMO curado
@@ -98,7 +99,7 @@ print(f"Reducción total respecto al original: "
       f"{total_inicial - total_final:,} registros")
 
 # Guardamos THER curado en Delta Lake
-ruta_salida = f"{CURATED_PATH}/ther_curado"
+ruta_salida = f"{PLATA_PATH}/ther_curado"
 ther_limpio.write \
     .format("delta") \
     .mode("overwrite") \

@@ -32,10 +32,11 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+BRONCE_PATH = config.RUTAS_BRONCE
+PLATA_PATH = config.RUTAS_PLATA
 
 # Cargamos DEMO desde Delta Lake
-demo = spark.read.format("delta").load(f"{CURATED_PATH}/demo")
+demo = spark.read.format("delta").load(f"{BRONCE_PATH}/demo")
 total_inicial = demo.count()
 print(f"\nRegistros iniciales DEMO: {total_inicial:,}")
 
@@ -124,7 +125,7 @@ print(f"Reducción total respecto al original: "
       f"{total_inicial - total_final:,} registros")
 
 # Guardamos DEMO curado en Delta Lake
-ruta_salida = f"{CURATED_PATH}/demo_curado"
+ruta_salida = f"{PLATA_PATH}/demo_curado"
 demo_fechas.write \
     .format("delta") \
     .mode("overwrite") \
