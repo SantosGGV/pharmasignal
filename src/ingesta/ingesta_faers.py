@@ -40,7 +40,7 @@ spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
 RAW_PATH = config.RUTAS_RAW
-CURATED_PATH = config.RUTAS_CURATED
+BRONCE_PATH = config.RUTAS_BRONCE
 
 # Definimos las 7 tablas con su nombre y patrón de fichero
 TABLAS_FAERS = [
@@ -106,7 +106,7 @@ def guardar_tabla(df, nombre_tabla):
     El modo 'overwrite' nos permite reejecutar el pipeline
     desde cero obteniendo siempre los mismos resultados
     """
-    ruta = f"{CURATED_PATH}/{nombre_tabla}"
+    ruta = f"{BRONCE_PATH}/{nombre_tabla}"
     df.write \
         .format("delta") \
         .mode("overwrite") \

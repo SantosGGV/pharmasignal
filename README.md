@@ -96,7 +96,7 @@ repositorio. Los scripts del pipeline y la interfaz lo leen a través de
 
 | Sección | Contenido |
 | --- | --- |
-| `[rutas]` | `data/raw`, `data/curated`, `data/diccionarios` y `outputs`, relativas a la base |
+| `[rutas]` | `data/raw`, las capas `data/bronce`, `data/plata` y `data/oro`, `data/diccionarios`, `outputs` y `outputs/logs`, relativas a la base |
 | `[senal]` | Criterio de señal (PRR ≥ 2, a ≥ 3, χ² ≥ 4) y umbral del IC95 inferior del ROR (> 1) |
 | `[interfaz]` | Respaldo mínimo (20 casos) para mostrar una señal confirmada |
 | `[listados]` | Filtro de señales triviales (c ≥ 100 y a + b ≥ 200) |
@@ -202,7 +202,7 @@ Has lanzado una fase antes que la que genera su tabla de entrada. El orden del
 apartado de ejecución no es orientativo sino obligatorio.
 
 ```bash
-ls data/curated/
+ls data/bronce/ data/plata/ data/oro/
 ```
 
 #### El script de preparación de datos falla con `bad interpreter: /bin/bash^M`

@@ -56,7 +56,8 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+PLATA_PATH = config.RUTAS_PLATA
+ORO_PATH = config.RUTAS_ORO
 
 # Umbrales de entidad. Idénticos a los de la primera pasada, si una entidad no
 # entra en los catálogos del explorador, tampoco debe aparecer en los cruces.
@@ -78,16 +79,16 @@ INDICACION_DESCONOCIDA = "product used for unknown indication"
 
 # Tabla intermedia del cruce fármaco × reacción. No forma parte de la capa
 # curada, se escribe para evitar recomputar el join y se elimina al terminar.
-RUTA_CRUCE = f"{CURATED_PATH}/_tmp_expl_cruce"
+RUTA_CRUCE = f"{ORO_PATH}/_tmp_expl_cruce"
 
 print("\nCargando datos curados...")
 
-demo = spark.read.format("delta").load(f"{CURATED_PATH}/demo_curado")
-demo_geo = spark.read.format("delta").load(f"{CURATED_PATH}/demo_geo")
-drug = spark.read.format("delta").load(f"{CURATED_PATH}/drug_curado")
-reac = spark.read.format("delta").load(f"{CURATED_PATH}/reac_curado")
-outc = spark.read.format("delta").load(f"{CURATED_PATH}/outc_curado")
-indi = spark.read.format("delta").load(f"{CURATED_PATH}/indi_curado")
+demo = spark.read.format("delta").load(f"{PLATA_PATH}/demo_curado")
+demo_geo = spark.read.format("delta").load(f"{PLATA_PATH}/demo_geo")
+drug = spark.read.format("delta").load(f"{PLATA_PATH}/drug_curado")
+reac = spark.read.format("delta").load(f"{PLATA_PATH}/reac_curado")
+outc = spark.read.format("delta").load(f"{PLATA_PATH}/outc_curado")
+indi = spark.read.format("delta").load(f"{PLATA_PATH}/indi_curado")
 
 # Mismas finalidad que en la primera pasada, para que las cifras de las dos
 # familias de tablas sean consistentes entre sí.
@@ -363,7 +364,7 @@ print("GUARDANDO RESULTADOS EN DELTA LAKE")
 print("\n")
 
 for nombre, df in salidas.items():
-    ruta = f"{CURATED_PATH}/{nombre}"
+    ruta = f"{ORO_PATH}/{nombre}"
     df.write.format("delta").mode("overwrite") \
         .option("overwriteSchema", "true").save(ruta)
     print(f"  {nombre}")

@@ -41,7 +41,9 @@ COPY .streamlit/ /app/.streamlit/
 # de construccion. De este modo la imagen puede construirse a partir de un clon
 # del repositorio, sin necesidad de haber ejecutado antes el pipeline para
 # generar las tablas.
-ARG URL_DATOS=https://github.com/SantosGGV/pharmasignal/releases/download/datos-demo/pharmasignal-datos-demo.tar.gz
+# datos-demo-v2 lleva la estructura por capas (0.11); datos-demo, la vieja, es
+# la de la imagen de v1.0-tfb y no se toca.
+ARG URL_DATOS=https://github.com/SantosGGV/pharmasignal/releases/download/datos-demo-v2/pharmasignal-datos-demo.tar.gz
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/* && \

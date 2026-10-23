@@ -79,7 +79,8 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+PLATA_PATH = config.RUTAS_PLATA
+ORO_PATH = config.RUTAS_ORO
 
 # Umbrales del análisis. Se definen como constantes para que las decisiones
 # queden explícitas y sean fáciles de ajustar y justificar.
@@ -110,10 +111,10 @@ print("\nCargando datos curados...")
 # Carga de las cuatro tablas curadas necesarias para el análisis geográfico.
 # demo_geo incluye ya la clasificación de trazabilidad geográfica generada por el módulo
 # curar_geografia.py
-demo = spark.read.format("delta").load(f"{CURATED_PATH}/demo_geo")
-drug = spark.read.format("delta").load(f"{CURATED_PATH}/drug_curado")
-reac = spark.read.format("delta").load(f"{CURATED_PATH}/reac_curado")
-outc = spark.read.format("delta").load(f"{CURATED_PATH}/outc_curado")
+demo = spark.read.format("delta").load(f"{PLATA_PATH}/demo_geo")
+drug = spark.read.format("delta").load(f"{PLATA_PATH}/drug_curado")
+reac = spark.read.format("delta").load(f"{PLATA_PATH}/reac_curado")
+outc = spark.read.format("delta").load(f"{PLATA_PATH}/outc_curado")
 
 # Restringimos el análisis al periodo con trazabilidad geográfica nacional,
 # como vimos en la etapa de curación de los datos disponemos del código por país de la UE
@@ -448,7 +449,7 @@ print(f"\nSeñales detectadas en el subconjunto español: {n_senales_es:,}")
 
 # Cargamos el PRR global ya calculado por prr_ror.py para poder cruzarlo.
 prr_global = spark.read.format("delta") \
-    .load(f"{CURATED_PATH}/senales_prr_ror") \
+    .load(f"{ORO_PATH}/senales_prr_ror") \
     .select("drugname_norm", "pt_norm",
             col("a").cast("int").alias("casos_global"),
             col("prr").alias("prr_global"),
@@ -725,7 +726,7 @@ salidas = {
 }
 
 for nombre, df in salidas.items():
-    ruta = f"{CURATED_PATH}/{nombre}"
+    ruta = f"{ORO_PATH}/{nombre}"
     df.write.format("delta").mode("overwrite") \
         .option("overwriteSchema", "true").save(ruta)
     print(f"  {nombre}")

@@ -28,16 +28,17 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+BRONCE_PATH = config.RUTAS_BRONCE
+PLATA_PATH = config.RUTAS_PLATA
 
 # Cargamos OUTC desde Delta Lake
-outc = spark.read.format("delta").load(f"{CURATED_PATH}/outc")
+outc = spark.read.format("delta").load(f"{BRONCE_PATH}/outc")
 total_inicial = outc.count()
 print(f"\nRegistros iniciales OUTC: {total_inicial:,}")
 
 # Cargamos DEMO curado para alinear por primaryid
 demo_curado = spark.read.format("delta") \
-    .load(f"{CURATED_PATH}/demo_curado")
+    .load(f"{PLATA_PATH}/demo_curado")
 primaryids_validos = demo_curado.select("primaryid").distinct()
 
 # Regla 1. Alineación con DEMO curado
@@ -75,7 +76,7 @@ outc_limpio.groupBy("outc_cod_norm").count() \
     .show(truncate=False)
 
 # Guardamos OUTC curado en Delta Lake
-ruta_salida = f"{CURATED_PATH}/outc_curado"
+ruta_salida = f"{PLATA_PATH}/outc_curado"
 outc_limpio.write \
     .format("delta") \
     .mode("overwrite") \
