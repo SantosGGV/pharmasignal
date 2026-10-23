@@ -38,7 +38,7 @@ from delta import configure_spark_with_delta_pip
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from src import config
 
-CURATED_PATH = config.RUTAS_CURATED
+PLATA_PATH = config.RUTAS_PLATA
 SALIDA = os.path.join(config.RUTAS_OUTPUTS, "escalabilidad.json")
 
 # Configuración del experimento. Se define como constantes para que las
@@ -139,15 +139,15 @@ def calcular_senales(spark, n_trimestres):
     """
     subconjunto = TRIMESTRES[:n_trimestres]
 
-    demo = spark.read.format("delta").load(f"{CURATED_PATH}/demo_curado") \
+    demo = spark.read.format("delta").load(f"{PLATA_PATH}/demo_curado") \
         .filter(col("trimestre").isin(subconjunto)) \
         .select("primaryid").distinct()
 
-    drug = spark.read.format("delta").load(f"{CURATED_PATH}/drug_curado") \
+    drug = spark.read.format("delta").load(f"{PLATA_PATH}/drug_curado") \
         .filter((col("rol") == "PS") & col("trimestre").isin(subconjunto)) \
         .select("primaryid", "drugname_norm").distinct()
 
-    reac = spark.read.format("delta").load(f"{CURATED_PATH}/reac_curado") \
+    reac = spark.read.format("delta").load(f"{PLATA_PATH}/reac_curado") \
         .filter(col("trimestre").isin(subconjunto)) \
         .select("primaryid", "pt_norm").distinct()
 

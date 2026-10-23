@@ -29,9 +29,9 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+PLATA_PATH = config.RUTAS_PLATA
 
-demo = spark.read.format("delta").load(f"{CURATED_PATH}/demo_curado")
+demo = spark.read.format("delta").load(f"{PLATA_PATH}/demo_curado")
 
 # Vemos qué contiene occr_country en los reportes con reporter_country = EU
 # durante los trimestres afectados por la recodificación

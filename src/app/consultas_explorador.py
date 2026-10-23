@@ -21,7 +21,7 @@ from deltalake import DeltaTable
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from src import config
 
-CURATED = config.RUTAS_CURATED
+ORO = config.RUTAS_ORO
 
 # Nombres normalizados que devuelve toda consulta. La vista siempre encuentra
 # las mismas columnas, lo que permite que una única función de representación
@@ -75,7 +75,7 @@ MOTIVO_NO_DISPONIBLE = {
 
 def _leer(nombre):
     #Lee una tabla Delta materializada y la devuelve como DataFrame de pandas.
-    ruta = f"{CURATED}/{nombre}"
+    ruta = f"{ORO}/{nombre}"
     if not os.path.isdir(ruta):
         raise FileNotFoundError(
             f"La tabla {nombre} no está disponible. Ejecuta el precálculo del "

@@ -49,15 +49,16 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+BRONCE_PATH = config.RUTAS_BRONCE
+PLATA_PATH = config.RUTAS_PLATA
 
 # Cargamos DRUG desde Delta Lake (dato crudo consolidado)
-drug = spark.read.format("delta").load(f"{CURATED_PATH}/drug")
+drug = spark.read.format("delta").load(f"{BRONCE_PATH}/drug")
 total_inicial = drug.count()
 print(f"\nRegistros iniciales DRUG: {total_inicial:,}")
 
 # Cargamos DEMO curado para alinearlo por primaryid
-demo_curado = spark.read.format("delta").load(f"{CURATED_PATH}/demo_curado")
+demo_curado = spark.read.format("delta").load(f"{PLATA_PATH}/demo_curado")
 primaryids_validos = demo_curado.select("primaryid").distinct()
 
 # Regla 1. Alineación con DEMO curado
@@ -137,7 +138,7 @@ drug_limpio.filter(col("rol") == "PS") \
     .show(20, truncate=False)
 
 # Guardamos DRUG curado en Delta Lake
-ruta_salida = f"{CURATED_PATH}/drug_curado"
+ruta_salida = f"{PLATA_PATH}/drug_curado"
 drug_limpio.write \
     .format("delta")  \
     .mode("overwrite") \

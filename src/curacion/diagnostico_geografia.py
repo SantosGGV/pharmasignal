@@ -29,9 +29,9 @@ builder = SparkSession.builder \
 spark = configure_spark_with_delta_pip(builder).getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
-CURATED_PATH = config.RUTAS_CURATED
+PLATA_PATH = config.RUTAS_PLATA
 
-demo = spark.read.format("delta").load(f"{CURATED_PATH}/demo_curado")
+demo = spark.read.format("delta").load(f"{PLATA_PATH}/demo_curado")
 
 # Evolución de ES y EU por trimestre
 print("\nEvolución de los códigos ES y EU por trimestre:")
