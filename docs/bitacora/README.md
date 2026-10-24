@@ -4,6 +4,7 @@ Una entrada por sesión de trabajo, la más reciente arriba. Plantilla: [PLANTIL
 
 | Fecha | Tarea | Resumen | Entrada |
 | --- | --- | --- | --- |
+| 2026-10-24 | 0.3 y 0.11 | Reconstrucción completa desde cero en base aparte con código 0; las cuatro cifras del «hecho cuando» coinciden y las 33 tablas de plata y oro, iguales; cierra la 0.3 y la 0.11 | [2026-10-24_0.11-reconstruccion.md](2026-10-24_0.11-reconstruccion.md) |
 | 2026-10-22 | 0.11 | Tablas en tres capas (bronce, plata y oro) con traslado reversible, paquete de demo v2 de 61 MB y 188 pruebas en verde; falta la reconstrucción completa | [2026-10-22_0.11-capas.md](2026-10-22_0.11-capas.md) |
 | 2026-10-22 | 0.3 | Orden `todo` y `--desde`/`--solo` con candado `flock` global y logs por fase; 154 pruebas en verde; revisiones terminadas, falta el commit y la reconstrucción tras la 0.11 | [2026-10-22_0.3-orden.md](2026-10-22_0.3-orden.md) |
 | 2026-10-20 | 0.13 | Cinco subagentes con permisos mínimos, guardas `solo_en.py` y `solo_lectura.py` y skill `/tarea`; 115 pruebas en verde | [2026-10-20_0.13-agentes.md](2026-10-20_0.13-agentes.md) |
