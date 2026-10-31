@@ -35,4 +35,7 @@ if [ -n "${PHARMASIGNAL_PRIVADO:-}" ]; then
 else
   echo "Aviso: PHARMASIGNAL_PRIVADO no está definida; no se puede leer la hoja de ruta privada."
 fi
+# Rastro de la sesión (0.13): estado de inicio, sesiones sin cierre y avisos de bitácora pendiente.
+# Lee el JSON del hook por el stdin que hereda.
+python3 "$(dirname "$0")/rastro_sesion.py" inicio || true
 exit 0

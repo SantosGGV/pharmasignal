@@ -4,6 +4,8 @@ Una entrada por sesión de trabajo, la más reciente arriba. Plantilla: [PLANTIL
 
 | Fecha | Tarea | Resumen | Entrada |
 | --- | --- | --- | --- |
+| 2026-10-31 | 0.13 (ampliación) | Comprobaciones en vivo: rastro, marca y aviso de sesión sin bitácora pasan; bloqueo de horas a medias y hook pendiente de OK; sin cambios de código | [2026-10-31_0.13-comprobaciones-en-vivo.md](2026-10-31_0.13-comprobaciones-en-vivo.md) |
+| 2026-10-24 | 0.13 (ampliación) | Rastro automático de cada sesión con git y sin IA, `/cerrar` con Cierre guardado por hook y pruebas con `pytest -q`; 226 pruebas en verde (antes 188) y 3 ADR (0016 a 0018) | [2026-10-24_0.13-ampliacion.md](2026-10-24_0.13-ampliacion.md) |
 | 2026-10-24 | 0.3 y 0.11 | Reconstrucción completa desde cero en base aparte con código 0; las cuatro cifras del «hecho cuando» coinciden y las 33 tablas de plata y oro, iguales; cierra la 0.3 y la 0.11 | [2026-10-24_0.11-reconstruccion.md](2026-10-24_0.11-reconstruccion.md) |
 | 2026-10-22 | 0.11 | Tablas en tres capas (bronce, plata y oro) con traslado reversible, paquete de demo v2 de 61 MB y 188 pruebas en verde; falta la reconstrucción completa | [2026-10-22_0.11-capas.md](2026-10-22_0.11-capas.md) |
 | 2026-10-22 | 0.3 | Orden `todo` y `--desde`/`--solo` con candado `flock` global y logs por fase; 154 pruebas en verde; revisiones terminadas, falta el commit y la reconstrucción tras la 0.11 | [2026-10-22_0.3-orden.md](2026-10-22_0.3-orden.md) |

@@ -45,7 +45,7 @@ GIT_ESCRITURA = {
 FIND_PROHIBIDO = {"-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprint0", "-fprintf", "-fls"}
 SCRIPTS_DEL_PROYECTO = ("scripts/git/terminos_prohibidos.sh",)
 # Ficheros privados que ningún agente lee: la lista solo la usa terminos_prohibidos.sh.
-PRIVADOS = ("terminos_prohibidos.txt", "horas.csv")
+PRIVADOS = ("terminos_prohibidos.txt", "horas.csv", "horas_sesiones.csv")
 PUNTUACION = set("();<>|&")
 ASIGNACION = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 RANGO_SED = re.compile(r"\s*\d+(\s*,\s*(\d+|\$))?\s*p\s*")
