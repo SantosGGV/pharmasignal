@@ -1,6 +1,6 @@
 # 0010 · traducir_terminos.py queda fuera del lanzador hasta la 0.7
 
-- Fecha: 2026-10-22 · Tarea: 0.3 · Estado: aceptada
+- Fecha: 2026-10-22 · Tarea: 0.3 · Estado: sustituida por el [0020](0020-argostranslate-venv-aparte.md) (tarea 0.7)
 
 ## Contexto
 `traducir_terminos.py` usa argostranslate. Ese paquete no está en `requirements.txt`. Sus modelos se descargan de una fuente que no está en la lista de fuentes permitidas.

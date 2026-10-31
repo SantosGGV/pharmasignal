@@ -65,7 +65,8 @@
 
 ## Entorno
 - WSL2 con Ubuntu 24.04, 24 GB de RAM y 12 núcleos. Proyecto en `~/pharmasignal` y entorno virtual en `~/pharmasignal/.venv` (Python 3.12). Java 17 (OpenJDK).
-- Versiones: PySpark 4.1.1, delta-spark 4.3.1, deltalake 1.6.2, pyarrow 24.0.0, pandas 3.0.3, Streamlit 1.59.1 y Plotly 6.9.0.
+- Versiones: PySpark 4.1.1, delta-spark 4.3.1, deltalake 1.6.2, pyarrow 24.0.0, pandas 3.0.3, Streamlit 1.66.1 y Plotly 6.9.0.
+- Bloqueos completos (0.7), con las transitivas: `requirements.txt` (pipeline e interfaz), `requirements-interfaz.txt` (la imagen Docker, mismas versiones) y `requirements-traduccion.txt` (venv aparte para `traducir_terminos.py`, porque argostranslate fija stanza 1.10.1). Una subida se hace a mano en el bloqueo y se comprueba con `python scripts/deps/comprobar_bloqueo.py <bloqueo>`.
 - pyarrow va fijado en 24.0.0: la 25.0.0 provoca SIGSEGV con deltalake 1.6.2 y el proceso muere sin traza (código de salida 139).
 - Spark en local: `local[*]`, driver de 16g, executor de 8g y `spark.sql.shuffle.partitions` = 200.
 - Nunca uses `inferSchema=True` al leer el ASCII de FAERS: hay campos con varios valores separados por comas. Se lee todo como STRING y se tipa en la curación.
@@ -79,9 +80,10 @@
 
 ## Comandos
 - Entorno: `source .venv/bin/activate`
-- Pruebas: `pytest tests/ -q`. El CI (`.github/workflows/pruebas.yml`) instala solo pytest y pyspark.
+- Pruebas: `pytest tests/ -q`. El CI (`.github/workflows/pruebas.yml`) instala el bloqueo en un entorno limpio y comprueba que da las mismas versiones, pasa pip-audit sobre los tres bloqueos, las pruebas y, en otro trabajo, construye la imagen y la recorre con AppTest.
 - Calidad antes del commit: `pre-commit run --all-files`
-- Pipeline, siempre con el lanzador (0.3): `python src/lanzador.py --lista` (plan, sin ejecutar), `todo`, `--desde <fase>` o `--solo <fase>`. Las fases, en su orden obligatorio, son `ingesta`, `curacion`, `validacion`, `analisis` y `control`, y se declaran en `config.toml`. Sobre la base del repositorio, las fases que escriben tablas piden `--confirmar`; para reconstruir sin pisar los datos, base aparte con `PHARMASIGNAL_BASE`. Logs en `outputs/logs/`. Códigos de salida: el del script que falle, 2 (uso o comprobaciones previas), 75 (candado ocupado) y 130 (interrumpido). `traducir_terminos.py` queda fuera hasta la 0.7.
+- Pipeline, siempre con el lanzador (0.3): `python src/lanzador.py --lista` (plan, sin ejecutar), `todo`, `--desde <fase>` o `--solo <fase>`. Las fases, en su orden obligatorio, son `ingesta`, `curacion`, `validacion`, `analisis` y `control`, y se declaran en `config.toml`. Sobre la base del repositorio, las fases que escriben tablas piden `--confirmar`; para reconstruir sin pisar los datos, base aparte con `PHARMASIGNAL_BASE`. Logs en `outputs/logs/`. Códigos de salida: el del script que falle, 2 (uso o comprobaciones previas), 75 (candado ocupado) y 130 (interrumpido). `traducir_terminos.py` queda fuera: se ejecuta a mano con su propio venv (`requirements-traduccion.txt`).
+- Interfaz, comprobación: `python scripts/comprobar_interfaz.py` (12 recorridos con AppTest).
 - Interfaz: `streamlit run src/app/streamlit_app.py`
 - Docker, solo la interfaz: `docker build -f docker/Dockerfile -t pharmasignal:1.0 .` y `docker run --rm -p 8501:8501 pharmasignal:1.0`. Los datos de demo se descargan de la release `datos-demo-v2` de GitHub, con la estructura por capas; `docker/preparar_demo.sh` regenera ese paquete. `datos-demo` (estructura vieja) no se borra: la usa la imagen de `v1.0-tfb`. Cada cambio de datos publica una release con el número siguiente. El `.dockerignore` va en la raíz del repo.
 - Otra tarea en paralelo: `git worktree add ../pharmasignal-<id> -b faseN/<id>-<nombre>`, `cd` allí, `source ~/pharmasignal/.venv/bin/activate` y `claude`. El worktree usa el entorno virtual y los datos del principal (`PHARMASIGNAL_BASE`).
@@ -91,7 +93,7 @@
 - `src/curacion` (12): un `curar_*.py` por tabla, `curar_geografia.py`, `traducir_terminos.py`, `validar_curacion.py` y dos diagnósticos de geografía.
 - `src/analisis` (8): `prr_ror.py`, `analisis_geografico.py`, `analisis_temporal.py`, `analisis_explorador.py`, `analisis_explorador_cruces.py`, `familias.py`, `validar_senales.py` y `medir_escalabilidad.py`.
 - `src/app` (2): `streamlit_app.py` y `consultas_explorador.py`.
-- `src/config.py` y `config.toml` (0.2); `src/lanzador.py` (0.3); `src/migrar_capas.py` (0.11, traslado de un solo uso de `data/curated` a las capas, con `--confirmar` y `--revertir`); `tests/` con `test_prr_ror.py`, `test_lanzador.py`, `test_capas.py` y las pruebas de los hooks (`test_hooks_commit.py`, `test_hooks_agentes.py` y `test_hooks_sesion.py`).
+- `src/config.py` y `config.toml` (0.2); `src/lanzador.py` (0.3); `src/migrar_capas.py` (0.11, traslado de un solo uso de `data/curated` a las capas, con `--confirmar` y `--revertir`); `scripts/deps/comprobar_bloqueo.py` y `scripts/comprobar_interfaz.py` (0.7); `tests/` con `test_prr_ror.py`, `test_lanzador.py`, `test_capas.py`, `test_dependencias.py` y las pruebas de los hooks (`test_hooks_commit.py`, `test_hooks_agentes.py` y `test_hooks_sesion.py`).
 - `docs/bitacora`, `docs/decisiones` y `docs/img`; `CHANGELOG.md`.
 - `.claude/agents`, `.claude/skills/tarea` y `cerrar`, `.claude/hooks` y `.claude/settings.json`; `scripts/git` (hooks de pre-commit); `.pre-commit-config.yaml`.
 

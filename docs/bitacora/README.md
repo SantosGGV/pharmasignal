@@ -4,6 +4,7 @@ Una entrada por sesión de trabajo, la más reciente arriba. Plantilla: [PLANTIL
 
 | Fecha | Tarea | Resumen | Entrada |
 | --- | --- | --- | --- |
+| 2026-10-31 | 0.7 | Dependencias con bloqueo completo de 44 paquetes, pip-audit de `requirements.txt` de 47 vulnerabilidades a 0, imagen desde `requirements-interfaz.txt` y traducción en venv aparte; 247 pruebas en verde (antes 226) y ADR 0019 y 0020 | [2026-10-31_0.7-dependencias.md](2026-10-31_0.7-dependencias.md) |
 | 2026-10-31 | 0.13 (ampliación) | Comprobaciones en vivo: rastro, marca y aviso de sesión sin bitácora pasan; bloqueo de horas a medias y hook pendiente de OK; sin cambios de código | [2026-10-31_0.13-comprobaciones-en-vivo.md](2026-10-31_0.13-comprobaciones-en-vivo.md) |
 | 2026-10-24 | 0.13 (ampliación) | Rastro automático de cada sesión con git y sin IA, `/cerrar` con Cierre guardado por hook y pruebas con `pytest -q`; 226 pruebas en verde (antes 188) y 3 ADR (0016 a 0018) | [2026-10-24_0.13-ampliacion.md](2026-10-24_0.13-ampliacion.md) |
 | 2026-10-24 | 0.3 y 0.11 | Reconstrucción completa desde cero en base aparte con código 0; las cuatro cifras del «hecho cuando» coinciden y las 33 tablas de plata y oro, iguales; cierra la 0.3 y la 0.11 | [2026-10-24_0.11-reconstruccion.md](2026-10-24_0.11-reconstruccion.md) |
