@@ -14,13 +14,25 @@ repos:
     hooks:
       - id: bandit
         args: ["-ll"]
-        files: ^(src/|\.claude/hooks/)
+        files: ^(src/|\.claude/hooks/|scripts/)
   - repo: https://github.com/pypa/pip-audit
     rev: v2.10.1
     hooks:
+      # Un hook por bloqueo (0.7). --no-deps: son bloqueos completos, no hace falta
+      # resolver (y así no se baja torch para auditar la traducción).
       - id: pip-audit
-        args: ["-r", "requirements.txt"]   # el fichero de requisitos que use el repo
+        name: pip-audit (requirements.txt)
+        args: ["--no-deps", "--disable-pip", "-r", "requirements.txt"]   # el fichero de requisitos que use el repo
         files: ^requirements.*\.txt$        # solo cuando cambian; la auditoría periódica va en CI (3.6)
+      - id: pip-audit
+        name: pip-audit (requirements-interfaz.txt)
+        args: ["--no-deps", "--disable-pip", "-r", "requirements-interfaz.txt"]
+        files: ^requirements.*\.txt$
+      # Excepción aceptada en la 0.7: stanza 1.10.1 sin arreglo mientras argostranslate la fije (ADR 0020).
+      - id: pip-audit
+        name: pip-audit (requirements-traduccion.txt)
+        args: ["--no-deps", "--disable-pip", "-r", "requirements-traduccion.txt", "--ignore-vuln", "PYSEC-2026-3075"]
+        files: ^requirements.*\.txt$
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
@@ -38,7 +50,7 @@ repos:
         entry: scripts/git/pruebas.sh
         language: script
         pass_filenames: false
-        files: ^(src/|tests/|config\.toml$|\.claude/|scripts/git/)   # .claude/: settings, skills, agentes y hooks
+        files: ^(src/|tests/|config\.toml$|\.claude/|scripts/|requirements.*\.txt$|docker/|\.pre-commit-config\.yaml$|\.github/)   # .claude/: settings, skills, agentes y hooks; bloqueos, Docker y CI: tests/test_dependencias.py (0.7)
       - id: prefijo-tarea
         name: Id de la tarea en el mensaje
         entry: scripts/git/prefijo_tarea.sh

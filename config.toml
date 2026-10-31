@@ -137,4 +137,4 @@ escribe_tablas = false
 # Scripts que el lanzador no ejecuta. --lista avisa de ellos.
 [[lanzador.fuera]]
 script = "src/curacion/traducir_terminos.py"
-motivo = "escribe trad_terminos con argostranslate, que no está en requirements.txt (hasta la 0.7). Para reconstruir en una base aparte, copia antes la tabla a su data/plata desde la base actual"
+motivo = "escribe trad_terminos con argostranslate, que va en su propio venv (requirements-traduccion.txt) y no en el principal. Se ejecuta a mano con ese venv. Para reconstruir en una base aparte, copia antes la tabla a su data/plata desde la base actual"

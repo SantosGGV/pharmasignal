@@ -14,13 +14,11 @@ WORKDIR /app
 
 # Solo las dependencias que la interfaz utiliza realmente. Se fijan las
 # versiones para que la imagen sea reproducible.
-RUN pip install --no-cache-dir \
-      streamlit==1.59.1 \
-      deltalake==1.6.2 \
-      pyarrow==24.0.0 \
-      pandas==3.0.3 \
-      plotly==6.9.0 \
-      numpy==2.5.1
+# Desde la 0.7 salen de requirements-interfaz.txt, que fija también las
+# transitivas con las mismas versiones que requirements.txt.
+COPY requirements-interfaz.txt /tmp/requirements-interfaz.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-interfaz.txt && \
+    rm /tmp/requirements-interfaz.txt
 
 # Codigo de la aplicacion.
 COPY src/app/ /app/src/app/

@@ -2,5 +2,6 @@
 pre-commit==4.7.0
 bandit==1.9.4
 pip-audit==2.10.1
+pytest==9.1.1
 # virtualenv (dependencia de pre-commit) fijada en la última que acepta el packaging de requirements.txt.
 virtualenv==21.14.5
