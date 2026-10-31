@@ -20,7 +20,7 @@
 1. Una tarea de la hoja por rama: `faseN/<id>-<nombre-corto>`, por ejemplo `fase0/0.3-orden`. Nunca trabajes en `main` ni mezcles tareas en una rama.
 2. No hagas commit ni push. Santos revisa el diff y hace los commits; el id de la tarea entra solo en el mensaje.
 3. Las tareas se llevan con `/tarea <id>` (desde la 0.13): plan del arquitecto (o plan corto de la sesión principal en tareas solo de documentación o de menos de 2 h), «sí» explícito de Santos, implementación, revisores y documentador. Hasta entonces, plan corto y OK de Santos antes de editar. Sin plan aprobado no se toca código.
-4. Pasos pequeños y `pytest tests/ -v` después de cada cambio. Una tarea con pruebas en rojo no está terminada.
+4. Pasos pequeños y `pytest tests/ -q` después de cada cambio. Una tarea con pruebas en rojo no está terminada.
 5. Avisa antes de lanzar una fase completa del pipeline: tarda minutos y el pico de memoria llega a unos 15,7 GB. Nunca dos ejecuciones de Spark a la vez; en cuanto exista el lanzador con candado (0.3), se lanza siempre con él.
 6. Nunca modifiques ni borres nada en `data/raw/`. Las tablas de datos solo se regeneran ejecutando su script.
 7. Conserva los comentarios del código tal cual, incluidas las grafías informales intencionadas («pandemos», «órden», «distringuir», «fronten»).
@@ -32,7 +32,7 @@
 ## Seguridad
 - El repositorio es público. En lo que se versiona no puede haber secretos, rutas personales, nombres de usuario, correos, horarios de trabajo ni nada del empleador. Lo privado vive en `$PHARMASIGNAL_PRIVADO`, fuera del repo.
 - Secretos: nunca en código, logs, salidas, bitácora ni capturas. `.env`, `.env.*` y `.streamlit/secrets.toml` no se leen ni se versionan. gitleaks se lanza siempre con `--redact`. Las credenciales de la carpeta personal (`~/.ssh`, `~/.git-credentials`, `~/.config/gh` y `~/.netrc`) están bloqueadas en `.claude/settings.json`.
-- La lista de términos prohibidos solo la lee `scripts/git/terminos_prohibidos.sh`, que enseña fichero:línea y nunca el término. Ni la lista ni `horas.csv` se abren desde Claude Code.
+- La lista de términos prohibidos solo la lee `scripts/git/terminos_prohibidos.sh`, que enseña fichero:línea y nunca el término. Ni la lista, ni `horas.csv` ni `horas_sesiones.csv` se abren desde Claude Code.
 - Código: `bandit` sin hallazgos de severidad media o alta. Nada de `eval`, `exec`, `pickle` con datos externos, `subprocess` con `shell=True` ni `yaml.load` sin `SafeLoader`. Los ficheros de FAERS/AEMS y las respuestas de las APIs son entrada externa: se validan.
 - Dependencias: versiones fijadas, `pip-audit` cada vez que cambien y licencias compatibles (nada «no comercial» ni de pago).
 - Red: descargas solo de las fuentes de la hoja (FDA y openFDA, NLM/RxNav, AEMPS/CIMA, EMA, CMS, AHRQ, OCDE y Europe PMC), con suma sha256 y fecha registradas.
@@ -58,8 +58,9 @@
 - `docs/bitacora/AAAA-MM-DD_<id>-<tema>.md`: una entrada por sesión, con `docs/bitacora/PLANTILLA.md`; índice en `docs/bitacora/README.md`.
 - `docs/decisiones/NNNN-<titulo>.md`: un ADR por decisión con alternativas, con `docs/decisiones/PLANTILLA.md`.
 - `CHANGELOG.md` con el formato Keep a Changelog; lo nuevo va en «Sin publicar».
-- La bitácora es pública: sin horas, sin datos personales y sin nada del empleador. Las horas las lleva Santos en su registro privado.
-- Una tarea se cierra con un mensaje que empieza por «## Cierre de la tarea <id>». El hook de cierre comprueba entonces que hay entrada de bitácora de hoy para esa tarea.
+- La bitácora es pública: sin horas de trabajo de Santos (reales o estimadas), sin datos personales y sin nada del empleador; los tiempos de ejecución, los permisos y las versiones sí caben. Las horas las lleva Santos en su registro privado.
+- Una tarea se cierra con un mensaje que empieza por «## Cierre de la tarea <id>», y cualquier otra sesión con `/cerrar` («## Cierre de la sesión»). El hook de cierre comprueba que hay entrada de bitácora de hoy y `guardar_cierre.py` guarda el Cierre tal cual en `$PHARMASIGNAL_PRIVADO/cierres/`.
+- Rastro sin IA (`rastro_sesion.py`): al salir, cada sesión deja en `$PHARMASIGNAL_PRIVADO/sesiones/` su rama, sus commits y sus ficheros tocados; si tocó algo fuera de `docs/` sin entrada de bitácora, el inicio siguiente avisa para que el documentador la escriba desde el rastro. Las sesiones de más de 24 h sin salida se cierran como «sesión sin cierre». Las horas de inicio y fin solo van en `horas_sesiones.csv`, que Claude no lee.
 - Las capturas para «Para contar» van en `docs/img/AAAA-MM-DD_<tema>.png` y las revisa el agente de seguridad antes de versionarlas.
 
 ## Entorno
@@ -78,7 +79,7 @@
 
 ## Comandos
 - Entorno: `source .venv/bin/activate`
-- Pruebas: `pytest tests/ -v`. El CI (`.github/workflows/pruebas.yml`) instala solo pytest y pyspark.
+- Pruebas: `pytest tests/ -q`. El CI (`.github/workflows/pruebas.yml`) instala solo pytest y pyspark.
 - Calidad antes del commit: `pre-commit run --all-files`
 - Pipeline, siempre con el lanzador (0.3): `python src/lanzador.py --lista` (plan, sin ejecutar), `todo`, `--desde <fase>` o `--solo <fase>`. Las fases, en su orden obligatorio, son `ingesta`, `curacion`, `validacion`, `analisis` y `control`, y se declaran en `config.toml`. Sobre la base del repositorio, las fases que escriben tablas piden `--confirmar`; para reconstruir sin pisar los datos, base aparte con `PHARMASIGNAL_BASE`. Logs en `outputs/logs/`. Códigos de salida: el del script que falle, 2 (uso o comprobaciones previas), 75 (candado ocupado) y 130 (interrumpido). `traducir_terminos.py` queda fuera hasta la 0.7.
 - Interfaz: `streamlit run src/app/streamlit_app.py`
@@ -90,9 +91,9 @@
 - `src/curacion` (12): un `curar_*.py` por tabla, `curar_geografia.py`, `traducir_terminos.py`, `validar_curacion.py` y dos diagnósticos de geografía.
 - `src/analisis` (8): `prr_ror.py`, `analisis_geografico.py`, `analisis_temporal.py`, `analisis_explorador.py`, `analisis_explorador_cruces.py`, `familias.py`, `validar_senales.py` y `medir_escalabilidad.py`.
 - `src/app` (2): `streamlit_app.py` y `consultas_explorador.py`.
-- `src/config.py` y `config.toml` (0.2); `src/lanzador.py` (0.3); `src/migrar_capas.py` (0.11, traslado de un solo uso de `data/curated` a las capas, con `--confirmar` y `--revertir`); `tests/` con `test_prr_ror.py`, `test_lanzador.py`, `test_capas.py` y las pruebas de los hooks (`test_hooks_commit.py` y `test_hooks_agentes.py`).
+- `src/config.py` y `config.toml` (0.2); `src/lanzador.py` (0.3); `src/migrar_capas.py` (0.11, traslado de un solo uso de `data/curated` a las capas, con `--confirmar` y `--revertir`); `tests/` con `test_prr_ror.py`, `test_lanzador.py`, `test_capas.py` y las pruebas de los hooks (`test_hooks_commit.py`, `test_hooks_agentes.py` y `test_hooks_sesion.py`).
 - `docs/bitacora`, `docs/decisiones` y `docs/img`; `CHANGELOG.md`.
-- `.claude/agents`, `.claude/skills/tarea`, `.claude/hooks` y `.claude/settings.json`; `scripts/git` (hooks de pre-commit); `.pre-commit-config.yaml`.
+- `.claude/agents`, `.claude/skills/tarea` y `cerrar`, `.claude/hooks` y `.claude/settings.json`; `scripts/git` (hooks de pre-commit); `.pre-commit-config.yaml`.
 
 ## Datos
 - `data/raw/`: 24 carpetas, de `faers_ascii_2020q1` a `faers_ascii_2025q4`. Cada una tiene `ASCII/` con las 7 tablas y una carpeta `Deleted` o `DELETED` con los casos eliminados por la FDA, en cuatro formatos de nombre (se aplican en la 1.0). `integridad_faers.sha256` usa rutas relativas a `data/raw`.

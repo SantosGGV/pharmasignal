@@ -130,6 +130,8 @@ def test_ordenes_de_lectura_pasan(orden):
     "env",
     "cat ~/pharmasignal_privado/terminos_prohibidos.txt",
     "grep -rniF -f \"$PHARMASIGNAL_PRIVADO/terminos_prohibidos.txt\" docs/",
+    "cat ~/pharmasignal_privado/horas.csv",
+    "tail -n 3 \"$PHARMASIGNAL_PRIVADO/horas_sesiones.csv\"",
     "git log && rm -rf x",
     "ls\nrm -rf x",
     "echo x>fichero",

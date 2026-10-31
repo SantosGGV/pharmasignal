@@ -1,4 +1,5 @@
-"""Pruebas de los hooks de la tarea 0.12: cierre con bitácora, términos prohibidos y prefijo de tarea.
+"""Pruebas de los hooks de la tarea 0.12 (cierre con bitácora, términos prohibidos y prefijo de tarea)
+y de pruebas.sh (0.13).
 
 Cada prueba trabaja en un repositorio git temporal y con una lista de términos inventada:
 nunca se usa la lista real de Santos.
@@ -13,6 +14,7 @@ RAIZ = pathlib.Path(__file__).resolve().parents[1]
 BITACORA = RAIZ / ".claude" / "hooks" / "exigir_bitacora.py"
 TERMINOS = RAIZ / "scripts" / "git" / "terminos_prohibidos.sh"
 PREFIJO = RAIZ / "scripts" / "git" / "prefijo_tarea.sh"
+PRUEBAS = RAIZ / "scripts" / "git" / "pruebas.sh"
 HOY = datetime.date.today().isoformat()
 
 
@@ -72,6 +74,13 @@ def test_sin_marca_de_cierre_deja_pasar(tmp_path):
     assert cierre(repo, last_assistant_message="¿Sigo con el paso 3?").returncode == 0
 
 
+def test_mencionar_el_cierre_a_mitad_del_mensaje_deja_pasar(tmp_path):
+    repo = repo_en_rama(tmp_path)
+    (repo / "src.py").write_text("x = 1\n", encoding="utf-8")
+    mensaje = "La skill termina con «## Cierre de la sesión»; el cierre de la tarea llega después."
+    assert cierre(repo, last_assistant_message=mensaje).returncode == 0
+
+
 def test_stop_hook_active_deja_pasar(tmp_path):
     repo = repo_en_rama(tmp_path)
     (repo / "src.py").write_text("x = 1\n", encoding="utf-8")
@@ -92,6 +101,23 @@ def test_sin_last_assistant_message_lee_la_transcripcion(tmp_path):
     linea = {"type": "assistant", "message": {"content": [{"type": "text", "text": "## Cierre de la tarea 0.3"}]}}
     transcripcion.write_text(json.dumps(linea) + "\n", encoding="utf-8")
     assert cierre(repo, last_assistant_message=None, transcript_path=str(transcripcion)).returncode == 2
+
+
+def test_cierre_de_sesion_sin_bitacora_bloquea(tmp_path):
+    repo = repo_en_rama(tmp_path, "main")
+    (repo / "src.py").write_text("x = 1\n", encoding="utf-8")
+    resultado = cierre(repo, last_assistant_message="## Cierre de la sesión\nRelease publicada.")
+    assert resultado.returncode == 2
+    assert f"{HOY}_*.md" in resultado.stderr
+
+
+def test_cierre_de_sesion_con_entrada_de_hoy_deja_pasar(tmp_path):
+    repo = repo_en_rama(tmp_path, "main")
+    (repo / "src.py").write_text("x = 1\n", encoding="utf-8")
+    entrada = repo / "docs" / "bitacora" / f"{HOY}_sesion-release.md"
+    entrada.parent.mkdir(parents=True)
+    entrada.write_text("# entrada\n", encoding="utf-8")
+    assert cierre(repo, last_assistant_message="## Cierre de la sesión\nRelease publicada.").returncode == 0
 
 
 def test_entrada_ilegible_deja_pasar():
@@ -162,3 +188,34 @@ def test_prefijo_se_pone_una_sola_vez(tmp_path):
 def test_prefijo_no_toca_los_merges(tmp_path):
     repo = repo_en_rama(tmp_path, "fase0/0.12-bitacora")
     assert prefijar(repo, origen="merge") == "Arregla el candado"
+
+
+def entorno_falso(carpeta):
+    """Un .venv con python y python3 falsos que enseñan la primera carpeta del PATH y qué python3 se usa."""
+    bin_ = carpeta / ".venv" / "bin"
+    bin_.mkdir(parents=True)
+    for nombre in ("python", "python3"):
+        falso = bin_ / nombre
+        falso.write_text('#!/bin/sh\necho "${PATH%%:*}"\ncommand -v python3\n', encoding="utf-8")
+        falso.chmod(0o755)
+    return bin_
+
+
+def pruebas(repo, **variables):
+    entorno = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
+    entorno.update(variables)
+    return subprocess.run(["bash", str(PRUEBAS)], cwd=repo, env=entorno, capture_output=True, text=True, check=True)
+
+
+def test_pruebas_pone_el_venv_del_repo_primero_en_el_path(tmp_path):
+    repo = repo_en_rama(tmp_path)
+    bin_ = entorno_falso(repo)
+    assert pruebas(repo).stdout.splitlines() == [str(bin_), str(bin_ / "python3")]
+
+
+def test_pruebas_respeta_el_entorno_activado(tmp_path):
+    repo = repo_en_rama(tmp_path)
+    entorno_falso(repo)
+    otro = entorno_falso(tmp_path / "otro")
+    salida = pruebas(repo, VIRTUAL_ENV=str(otro.parent)).stdout.splitlines()
+    assert salida == [str(otro), str(otro / "python3")]

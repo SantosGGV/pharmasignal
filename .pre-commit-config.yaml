@@ -14,7 +14,7 @@ repos:
     hooks:
       - id: bandit
         args: ["-ll"]
-        files: ^src/
+        files: ^(src/|\.claude/hooks/)
   - repo: https://github.com/pypa/pip-audit
     rev: v2.10.1
     hooks:
@@ -38,7 +38,7 @@ repos:
         entry: scripts/git/pruebas.sh
         language: script
         pass_filenames: false
-        files: ^(src/|tests/|config\.toml$|\.claude/hooks/|scripts/git/)
+        files: ^(src/|tests/|config\.toml$|\.claude/|scripts/git/)   # .claude/: settings, skills, agentes y hooks
       - id: prefijo-tarea
         name: Id de la tarea en el mensaje
         entry: scripts/git/prefijo_tarea.sh

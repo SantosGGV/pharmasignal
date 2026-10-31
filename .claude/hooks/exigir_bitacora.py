@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Hook Stop: no deja cerrar una tarea sin su entrada de bitácora de hoy.
+"""Hook Stop: no deja cerrar una tarea ni una sesión sin su entrada de bitácora de hoy.
 
-Solo actúa cuando el último mensaje de Claude anuncia «Cierre de la tarea»,
-para no cortar las preguntas a mitad de trabajo. Ese mensaje sale del campo
-last_assistant_message, como recomienda la documentación de Claude Code, y
-solo si no viene se busca en la transcripción. En una rama de tarea exige la
+Solo actúa cuando el último mensaje de Claude empieza por «## Cierre de la
+tarea» o «## Cierre de la sesión» (/cerrar), para no cortar las preguntas a
+mitad de trabajo ni los mensajes que solo mencionan el cierre. Ese mensaje sale del campo last_assistant_message, como recomienda
+la documentación de Claude Code, y solo si no viene se busca en la
+transcripción. En una rama de tarea exige la
 entrada de esa tarea. Si algo falla al leer la entrada, deja terminar: no
-bloquea por un error del propio hook.
+bloquea por un error del propio hook. rastro_sesion.py y guardar_cierre.py
+reutilizan sus funciones.
 """
 import datetime
 import json
@@ -15,7 +17,7 @@ import re
 import subprocess
 import sys
 
-MARCA = "cierre de la tarea"
+MARCAS = ("## cierre de la tarea", "## cierre de la sesión")
 RAMA_DE_TAREA = re.compile(r"^fase\d+/(\d+\.\d+)-")
 
 
@@ -52,13 +54,48 @@ def ultimo_texto_de_la_transcripcion(ruta):
 
 
 def git(argumentos, cwd):
-    """Salida de una orden de git, o None si falla."""
+    """Salida de una orden de git, o None si falla. Las rutas con acentos salen tal cual, no en octal."""
     try:
         return subprocess.run(
-            ["git", *argumentos], cwd=cwd, capture_output=True, text=True, check=True
+            ["git", "-c", "core.quotepath=false", *argumentos], cwd=cwd, capture_output=True, text=True, check=True
         ).stdout
     except (OSError, subprocess.CalledProcessError):
         return None
+
+
+def rutas_fuera_de_docs(rutas):
+    """Las rutas que no son de docs/ ni CHANGELOG.md: las que piden entrada de bitácora."""
+    return [r for r in rutas if not (r.startswith("docs/") or r == "CHANGELOG.md")]
+
+
+def rutas_sucias(raiz):
+    """Rutas con cambios sin commit (incluidas las nuevas), o None si git falla.
+
+    Con -z git no escapa los nombres, y en un renombrado da el nombre nuevo y,
+    en la entrada siguiente, el viejo: cuentan los dos.
+    """
+    estado = git(["status", "--porcelain", "-z", "--untracked-files=all"], raiz)
+    if estado is None:
+        return None
+    rutas, entradas = [], iter(estado.split("\0"))
+    for entrada in entradas:
+        if len(entrada) > 3:
+            rutas.append(entrada[3:])
+            if "R" in entrada[:2] or "C" in entrada[:2]:
+                viejo = next(entradas, "")
+                if "R" in entrada[:2] and viejo:
+                    rutas.append(viejo)
+    return rutas
+
+
+def patron_de_entrada(rama, fecha):
+    """Patrón de la entrada de bitácora de esa fecha: la de su tarea en una rama de tarea."""
+    tarea = RAMA_DE_TAREA.match(rama or "")
+    return f"{fecha}_{tarea.group(1)}-*.md" if tarea else f"{fecha}_*.md"
+
+
+def hay_entrada(raiz, rama, fecha):
+    return bool(list((pathlib.Path(raiz) / "docs" / "bitacora").glob(patron_de_entrada(rama, fecha))))
 
 
 def main():
@@ -71,26 +108,23 @@ def main():
     texto = texto_de(datos.get("last_assistant_message"))
     if not texto.strip():
         texto = ultimo_texto_de_la_transcripcion(datos.get("transcript_path"))
-    if MARCA not in texto.lower():
+    if not texto.lstrip().lower().startswith(MARCAS):
         return 0
     raiz = (git(["rev-parse", "--show-toplevel"], datos.get("cwd") or ".") or "").strip()
     if not raiz:
         return 0
-    estado = git(["status", "--porcelain", "--untracked-files=all"], raiz)
-    if estado is None:
-        return 0
-    rutas = [linea[3:].split(" -> ")[-1].strip('"') for linea in estado.splitlines() if len(linea) > 3]
-    if not [r for r in rutas if not (r.startswith("docs/") or r == "CHANGELOG.md")]:
+    rutas = rutas_sucias(raiz)
+    if not rutas or not rutas_fuera_de_docs(rutas):
         return 0
     hoy = datetime.date.today().isoformat()
-    tarea = RAMA_DE_TAREA.match((git(["branch", "--show-current"], raiz) or "").strip())
-    patron = f"{hoy}_{tarea.group(1)}-*.md" if tarea else f"{hoy}_*.md"
-    if list((pathlib.Path(raiz) / "docs" / "bitacora").glob(patron)):
+    rama = (git(["branch", "--show-current"], raiz) or "").strip()
+    if hay_entrada(raiz, rama, hoy):
         return 0
+    patron = patron_de_entrada(rama, hoy)
     print(
-        f"Antes de cerrar la tarea falta su entrada de bitácora de hoy (docs/bitacora/{patron}). "
+        f"Antes de cerrar falta la entrada de bitácora de hoy (docs/bitacora/{patron}). "
         "Delega en el documentador, que la crea con docs/bitacora/PLANTILLA.md: "
-        "sin horas ni datos personales.",
+        "sin horas de trabajo ni datos personales.",
         file=sys.stderr,
     )
     return 2

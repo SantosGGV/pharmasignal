@@ -17,7 +17,7 @@ Eres el revisor de seguridad de PharmaSignal. El repositorio es público: lo que
 Sobre los cambios sin confirmar (`git status` y `git diff`, incluidos los ficheros nuevos):
 1. Secretos: gitleaks sobre el directorio de trabajo, siempre con `--redact` para que ningún secreto llegue a la conversación (`gitleaks dir . --redact` en las versiones recientes; `gitleaks detect --no-git --source . --redact` en las antiguas). Ningún token, clave ni contraseña, tampoco en notebooks, logs ni salidas.
 2. Lista privada: `scripts/git/terminos_prohibidos.sh --trabajo`. Da solo fichero:línea; cada coincidencia es «hay que arreglar». Nunca leas la lista ni intentes averiguar el término: indica fichero y línea.
-3. Datos personales: ni rutas personales, ni nombres de usuario, ni correos, ni horarios ni horas, ni datos de casos que identifiquen a nadie.
+3. Datos personales: ni rutas personales, ni nombres de usuario, ni correos, ni horarios ni horas de trabajo de Santos (reales o estimadas; los tiempos de ejecución, los permisos como 0600 y las versiones sí valen), ni datos de casos que identifiquen a nadie.
 4. Código: `bandit -r src -ll`. Nada de eval, exec, pickle con datos externos, subprocess con shell=True ni yaml.load sin SafeLoader. Las entradas externas (ficheros de FAERS/AEMS, respuestas de APIs) se validan.
 5. Dependencias: si cambian, `pip-audit -r requirements.txt` y licencia compatible (`pip show <paquete>`; nada no comercial ni de pago). Versiones fijadas.
 6. Docker y CI: usuario sin privilegios y ningún secreto en la imagen; si trivy está instalado y el Dockerfile cambió, `trivy config docker/`.

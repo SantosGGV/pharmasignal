@@ -15,7 +15,8 @@
       "Bash(pip-audit *)",
       "Bash(gitleaks *)",
       "Bash(scripts/git/terminos_prohibidos.sh *)",
-      "Read(~/pharmasignal_privado/hoja_de_ruta.md)"
+      "Read(~/pharmasignal_privado/hoja_de_ruta.md)",
+      "Read(~/pharmasignal_privado/sesiones/**)"
     ],
     "ask": [
       "Bash(rm *)",
@@ -37,6 +38,8 @@
       "Read(./.streamlit/secrets.toml)",
       "Read(~/pharmasignal_privado/terminos_prohibidos.txt)",
       "Read(~/pharmasignal_privado/horas.csv)",
+      "Read(~/pharmasignal_privado/horas_sesiones.csv)",
+      "Edit(~/pharmasignal_privado/horas_sesiones.csv)",
       "Read(~/.ssh/**)",
       "Read(~/.config/gh/**)",
       "Read(~/.git-credentials)",
@@ -66,6 +69,21 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/exigir_bitacora.py\""
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guardar_cierre.py\""
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/rastro_sesion.py\" fin",
+            "timeout": 10
           }
         ]
       }
