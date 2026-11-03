@@ -29,6 +29,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Se p
 - Trabajos «pruebas» e «imagen» en `.github/workflows/pruebas.yml`: venv limpio, comparador, `pip-audit` de los tres bloqueos, pytest, `docker build` y AppTest dentro de la imagen (0.7).
 - Hooks de pre-commit: `pip-audit` por cada bloque de dependencias (0.7).
 - Decisiones 0019 (bloqueo completo y comparador) y 0020 (argostranslate en venv aparte y excepción de stanza) (0.7).
+- `tests/test_repo_limpio.py`: comprueba que el `.gitignore` no repite líneas, que no hay `.pyc`, `__pycache__` ni `.venv` versionados, y que no hay rutas personales en lo versionado (0.9).
+- Pruebas `TABLAS_ORO` y `test_nadie_usa_la_carpeta_vieja` en `tests/test_capas.py`, que sustituyen a las de `migrar_capas` (0.9).
+- Decisión 0021 (historial sin `.venv`: reescribir con filter-repo; ejecución pendiente) (0.9).
 
 ### Cambiado
 - Los comandos del pipeline se lanzan con el lanzador, según CLAUDE.md (0.3).
@@ -46,6 +49,14 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Se p
 - pytest fijado a 9.1.1 en `requirements-dev.txt` (0.7).
 - argostranslate sale del `.venv` principal. `traducir_terminos.py` sigue fuera del lanzador y se ejecuta a mano con su venv (0.7).
 - El [ADR 0010](docs/decisiones/0010-traducir-fuera-del-lanzador.md) queda sustituido por el 0020 (0.7).
+- CLAUDE.md actualizado tras el visto bueno de Santos (0.9).
+
+### Eliminado
+- `src/migrar_capas.py`, el traslado de un solo uso de la 0.11 (0.9).
+- La clave `curated` de `[rutas]` en `config.toml`, `RUTAS_CURATED` en `src/config.py` y la carpeta `data/curated/` (0.9).
+
+### Corregido
+- `.gitignore` sin las líneas repetidas `.venv/`, `__pycache__/` y `*.pyc` (0.9).
 
 ### Seguridad
 - anyio 4.14.2, GitPython 3.1.60 y urllib3 2.8.0, que corrigen 10 vulnerabilidades conocidas (0.12).
