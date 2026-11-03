@@ -22,7 +22,6 @@ BASE = Path(os.environ.get("PHARMASIGNAL_BASE", RAIZ_REPO)).expanduser()
 
 # Rutas absolutas, como texto, porque los scripts las componen con f-strings.
 RUTAS_RAW = str(BASE / _cfg["rutas"]["raw"])
-RUTAS_CURATED = str(BASE / _cfg["rutas"]["curated"])
 RUTAS_BRONCE = str(BASE / _cfg["rutas"]["bronce"])
 RUTAS_PLATA = str(BASE / _cfg["rutas"]["plata"])
 RUTAS_ORO = str(BASE / _cfg["rutas"]["oro"])

@@ -17,8 +17,6 @@ raw = "data/raw"
 bronce = "data/bronce"
 plata = "data/plata"
 oro = "data/oro"
-# Carpeta anterior a las capas. Solo la usa src/migrar_capas.py; se retira en la 0.9.
-curated = "data/curated"
 diccionarios = "data/diccionarios"
 outputs = "outputs"
 logs = "outputs/logs"

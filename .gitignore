@@ -1,6 +1,5 @@
 # Datos FAERS — nunca subir al repo (volumen excesivo)
 data/raw/
-data/curated/
 data/bronce/
 data/plata/
 data/oro/
@@ -20,10 +19,6 @@ spark-warehouse/
 __pycache__/
 *.pyc
 *.pyo
-
-.venv/
-__pycache__/
-*.pyc
 
 outputs/*.txt
 outputs/logs/
