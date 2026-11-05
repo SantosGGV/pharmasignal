@@ -31,7 +31,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Se p
 - Decisiones 0019 (bloqueo completo y comparador) y 0020 (argostranslate en venv aparte y excepción de stanza) (0.7).
 - `tests/test_repo_limpio.py`: comprueba que el `.gitignore` no repite líneas, que no hay `.pyc`, `__pycache__` ni `.venv` versionados, y que no hay rutas personales en lo versionado (0.9).
 - Pruebas `TABLAS_ORO` y `test_nadie_usa_la_carpeta_vieja` en `tests/test_capas.py`, que sustituyen a las de `migrar_capas` (0.9).
-- Decisión 0021 (historial sin `.venv`: reescribir con filter-repo; ejecución pendiente) (0.9).
+- Decisión 0021 (historial sin `.venv`: reescribir con filter-repo; ejecutada el 03/11/2026) (0.9).
 
 ### Cambiado
 - Los comandos del pipeline se lanzan con el lanzador, según CLAUDE.md (0.3).
@@ -50,6 +50,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Se p
 - argostranslate sale del `.venv` principal. `traducir_terminos.py` sigue fuera del lanzador y se ejecuta a mano con su venv (0.7).
 - El [ADR 0010](docs/decisiones/0010-traducir-fuera-del-lanzador.md) queda sustituido por el 0020 (0.7).
 - CLAUDE.md actualizado tras el visto bueno de Santos (0.9).
+- Historial de Git reescrito sin `.venv` (0.9, ADR 0021): cambian todos los hashes de commit; las etiquetas conservan nombre y árbol.
+- `tests/test_repo_limpio.py` ampliada: las líneas repetidas cuentan igual con y sin barra final, y el patrón de ruta personal ya no cuenta la carpeta del ejecutor de GitHub Actions. Son 7 casos parametrizados (0.9).
 
 ### Eliminado
 - `src/migrar_capas.py`, el traslado de un solo uso de la 0.11 (0.9).

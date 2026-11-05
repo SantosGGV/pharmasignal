@@ -1,9 +1,11 @@
 # 0021 · Historial sin `.venv`: reescribir con filter-repo y push forzado (opción A)
 
-- Fecha: 2026-11-02 · Tarea: 0.9 · Estado: aceptada; ejecución pendiente (paso 8)
+- Fecha: 2026-11-02 · Tarea: 0.9 · Estado: aceptada; ejecutada el 03/11/2026
 
 ## Contexto
-El `.venv` entró en el repo público en el commit eeb01451 (09/07/2026) y salió en d98813f5. Solo esos dos commits lo tocan. El árbol de trabajo ya no lo versiona, pero el historial sí.
+Los hashes de commit de este ADR son los del historial reescrito el 03/11/2026; la tabla de equivalencias con los anteriores está en la carpeta privada.
+
+El `.venv` entró en el repo público en el commit 60e1bd94 (09/07/2026) y salió en 49ca8871. Solo esos dos commits lo tocan. El árbol de trabajo ya no lo versiona, pero el historial sí.
 
 Inventario, medido antes de tocar nada:
 - gitleaks 8.30.1 (`gitleaks git . --redact`) escaneó 58 commits, unos 261 MB. Dio 2 hallazgos, los dos de la regla generic-api-key en `.venv/share/jupyter/nbextensions/pydeck/index.js.map:6`. Son identificadores JS de 8 caracteres de un source map, con entropía 3,9 y 4,1. Son falsos positivos.
@@ -16,12 +18,12 @@ Referencias públicas, antes de reescribir:
 
 | Referencia | Commit | `^{tree}` |
 | --- | --- | --- |
-| main | 52e0fd5e | 6721500e |
-| v1.0-tfb | 6ef20605 | 518ac269 |
-| datos-demo | 8ed771e6 | b499c17b |
-| datos-demo-v2 | 5a7988e3 | 2cd44d7e |
+| main | 84694e90 | 6721500e |
+| v1.0-tfb | 0c949725 | 518ac269 |
+| datos-demo | 6bb6dab9 | b499c17b |
+| datos-demo-v2 | 4ac4d3d7 | 2cd44d7e |
 
-Las tres etiquetas descienden de eeb01451. `git ls-remote origin` da solo `main`, `datos-demo`, `datos-demo-v2` y `v1.0-tfb` (anotada). No hay `refs/pull` ni `refs/replace`.
+Las tres etiquetas descienden de 60e1bd94. `git ls-remote origin` da solo `main`, `datos-demo`, `datos-demo-v2` y `v1.0-tfb` (anotada). No hay `refs/pull` ni `refs/replace`.
 
 El entregable de la 0.9 pide: sin rutas personales, sin `.pyc` y solo lo necesario en el historial.
 
@@ -29,15 +31,15 @@ El entregable de la 0.9 pide: sin rutas personales, sin `.pyc` y solo lo necesar
 **Cómo quitar el `.venv` del historial.**
 - A) Reescribir con `git filter-repo --sensitive-data-removal --invert-paths --path .venv/` y push forzado. Es la opción elegida.
   - Cumple el entregable entero: 0 hallazgos sin excepciones, 0 rutas personales y 0 `.pyc`.
-  - Cambian todos los hashes desde eeb01451. Las 3 etiquetas conservan su nombre y su `^{tree}`. Que el árbol sea idéntico prueba que el código defendido en `v1.0-tfb` no cambia.
+  - Cambian todos los hashes desde 60e1bd94. Las 3 etiquetas conservan su nombre y su `^{tree}`. Que el árbol sea idéntico prueba que el código defendido en `v1.0-tfb` no cambia.
   - Las releases cuelgan del nombre de la etiqueta.
   - Se pierden las firmas de las etiquetas, si las hubiera, y los hashes viejos de los cierres y del rastro privados. Se guarda `commit-map`.
   - Las copias de terceros y la caché de GitHub conservan lo viejo un tiempo.
 - B) No reescribir y añadir `.gitleaksignore` con las 2 huellas. Se descarta.
   - No tiene riesgo y gitleaks termina con código 0.
   - No cumple «sin rutas personales», «sin `.pyc`» ni «solo lo necesario», y choca con la sección «Seguridad» de CLAUDE.md.
-- C) Reescribir `main` y dejar `v1.0-tfb` en 6ef20605. Se descarta.
-  - 6ef20605 desciende de eeb01451, así que la etiqueta mantiene todo el `.venv` alcanzable. Lo mismo pasa con una rama o etiqueta pública de archivo.
+- C) Reescribir `main` y dejar `v1.0-tfb` en 0c949725. Se descarta.
+  - 0c949725 desciende de 60e1bd94, así que la etiqueta mantiene todo el `.venv` alcanzable. Lo mismo pasa con una rama o etiqueta pública de archivo.
 
 ## Decisión
 Opción A, elegida por Santos, con estas condiciones:
@@ -59,3 +61,26 @@ Opción A, elegida por Santos, con estas condiciones:
 - No hace falta `.gitleaksignore`.
 - gitleaks sobre todo el historial en CI queda para la 3.6.
 - Los revisores de seguridad recuerdan: `filter-repo` borra el remoto `origin`. GitHub sigue sirviendo los commits viejos por SHA hasta su recolección de basura (se pide a Soporte). Los forks y clones guardan lo viejo. Hay que comprobar que no se ha borrado nada fuera de `.venv`.
+
+## Resultado
+Ejecutada el 03/11/2026. Cifras sobre todas las refs.
+
+| Cifra | Antes | Después |
+| --- | --- | --- |
+| Commits | 75 | 75. No se pierde ninguno |
+| Rutas `.venv/` | 22.503 | 0 |
+| `.pyc` | 8.369 | 0 |
+| Rutas `__pycache__/` | 9.554 | 0 |
+| Ficheros con la ruta personal (contador del inventario) | 8.391 | 0 |
+| gitleaks con `--log-opts="--all" --redact` | 2 | 0 |
+| Pack | 645 MB | 2,3 MiB |
+| Ficheros en `main` | 126 | 126 |
+
+- El `^{tree}` de `main` y de las 3 etiquetas es idéntico antes y después.
+- Quedan 3 coincidencias del patrón crudo del inventario, que son marcadores de ruta de Windows y no rutas reales.
+- gitleaks con `--log-opts="--tags"`: 0. Sobre los 126 ficheros versionados: 0.
+- Push: `--dry-run` de un push forzado explícito de ramas y etiquetas, sin `--mirror`, con 4 actualizaciones. El push real lo lanzó Santos.
+- Después del push, `main` está en 7d7c0e2a. Las releases `datos-demo` y `datos-demo-v2` siguen publicadas con sus assets, y URL_DATOS responde 200.
+- Copia local resincronizada sin reclonar ni `git clean -x`. Pack local de 2,17 MiB y 0 objetos de `.venv`.
+- Pruebas: 237 en verde (antes 229).
+- Detalle y pendientes en la [bitácora del 03/11](../bitacora/2026-11-03_0.9-reescritura.md).

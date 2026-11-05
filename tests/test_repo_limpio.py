@@ -23,9 +23,10 @@ RAIZ = Path(__file__).resolve().parent.parent
 # escribir ningún nombre de usuario; los marcadores como C:\Users\<usuario>
 # del README no cuentan.
 # Se construye por partes para que el propio texto del patrón no case con él.
+# La carpeta personal del ejecutor de GitHub Actions no es de nadie y no cuenta.
 _B, _W = "/", re.escape("\\")
 RUTA_PERSONAL = re.compile("|".join([
-    _B + "home" + _B + "[a-z]",
+    _B + "home" + _B + "(?!runner" + _B + ")[a-z]",
     _B + "mnt" + _B + "c" + _B + "Users" + _B + r"[^<\s]",
     "[Cc]:" + _W + "Users" + _W + r"[^<\s]",
     _B + "Users" + _B + "[A-Za-z]",
@@ -51,10 +52,35 @@ def _lineas_utiles(fichero):
     return [l.strip() for l in lineas if l.strip() and not l.strip().startswith("#")]
 
 
+def _repetidas(lineas):
+    """Líneas que se repiten, contando «data/raw» y «data/raw/» como la misma."""
+    normalizadas = [l.rstrip("/") for l in lineas]
+    return sorted({l for l in normalizadas if normalizadas.count(l) > 1})
+
+
+def test_repetidas_cuenta_igual_con_y_sin_barra_final():
+    assert _repetidas(["data/raw", "data/raw/", ".venv/"]) == ["data/raw"]
+    assert _repetidas(["data/raw/", "data/oro/"]) == []
+
+
 def test_gitignore_sin_lineas_repetidas():
-    lineas = _lineas_utiles(RAIZ / ".gitignore")
-    repetidas = sorted({l for l in lineas if lineas.count(l) > 1})
+    repetidas = _repetidas(_lineas_utiles(RAIZ / ".gitignore"))
     assert repetidas == [], f"Líneas repetidas en .gitignore: {repetidas}"
+
+
+# Los ejemplos se montan por partes, igual que el patrón, para que este
+# fichero no tenga ninguna ruta literal.
+@pytest.mark.parametrize("texto, es_personal", [
+    (_B + "home" + _B + "ana" + _B + "x", True),
+    (_B + "mnt" + _B + "c" + _B + "Users" + _B + "ana", True),
+    ("C:" + "\\" + "Users" + "\\" + "ana", True),
+    (_B + "Users" + _B + "ana", True),
+    (_B + "home" + _B + "runner" + _B + "work", False),
+    ("C:" + "\\" + "Users" + "\\" + "<usuario>", False),
+    ("~" + _B + "pharmasignal", False),
+])
+def test_patron_de_ruta_personal(texto, es_personal):
+    assert bool(RUTA_PERSONAL.search(texto)) is es_personal
 
 
 @hay_git
