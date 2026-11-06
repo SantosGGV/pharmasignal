@@ -36,6 +36,9 @@ SENAL_ROR_IC_INF_UMBRAL = _cfg["senal"]["ror_ic_inf_umbral"]
 
 INTERFAZ_MIN_CASOS_RESPALDO = _cfg["interfaz"]["min_casos_respaldo"]
 
+PROYECTO_URL_CODIGO = _cfg["proyecto"]["url_codigo"]
+PROYECTO_URL_LICENCIA = _cfg["proyecto"]["url_licencia"]
+
 LISTADOS_TRIVIAL_MIN_C = _cfg["listados"]["trivial_min_c"]
 LISTADOS_TRIVIAL_MIN_REPORTES_FARMACO = _cfg["listados"]["trivial_min_reportes_farmaco"]
 

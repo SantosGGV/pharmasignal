@@ -246,6 +246,12 @@ cd data/raw && sha256sum -c ../integridad_faers.sha256 --quiet
 
 Una señal estadística es una hipótesis de trabajo, no una prueba de causalidad.
 
+## Licencia
+
+El código se publica bajo la licencia [AGPL-3.0-only](LICENSE), © 2026 Santos Gómez
+Gómez. La licencia cubre solo el código: los paquetes y los datos de terceros tienen
+sus propias condiciones, recogidas en [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## Autor
 
 Santos Gómez Gómez

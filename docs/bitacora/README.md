@@ -4,6 +4,7 @@ Una entrada por sesión de trabajo, la más reciente arriba. Plantilla: [PLANTIL
 
 | Fecha | Tarea | Resumen | Entrada |
 | --- | --- | --- | --- |
+| 2026-11-06 | 0.10 | Licencia AGPL-3.0-only con `LICENSE`, avisos de terceros generados sin instalar nada y enlaces de licencia en el pie de la interfaz; 282 pruebas en verde (antes 237) y ADR 0022 | [2026-11-06_0.10-licencia.md](2026-11-06_0.10-licencia.md) |
 | 2026-11-03 | 0.9 (cierre) | Historial reescrito sin `.venv`: pack de 645 MB a 2,3 MiB y gitleaks de 2 hallazgos a 0, con el mismo árbol en cada etiqueta; 237 pruebas en verde (antes 229) y ADR 0021 ejecutado | [2026-11-03_0.9-reescritura.md](2026-11-03_0.9-reescritura.md) |
 | 2026-11-02 | 0.9 (parte 1) | Inventario del historial, `.gitignore` sin líneas repetidas, prueba de repo limpio y retirada de `curated` y `migrar_capas`; 229 pruebas al final (antes 247) y ADR 0021 para reescribir el historial, paso 8 pendiente | [2026-11-02_0.9-repo-limpio.md](2026-11-02_0.9-repo-limpio.md) |
 | 2026-10-31 | 0.7 | Dependencias con bloqueo completo de 44 paquetes, pip-audit de `requirements.txt` de 47 vulnerabilidades a 0, imagen desde `requirements-interfaz.txt` y traducción en venv aparte; 247 pruebas en verde (antes 226) y ADR 0019 y 0020 | [2026-10-31_0.7-dependencias.md](2026-10-31_0.7-dependencias.md) |
