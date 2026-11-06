@@ -36,6 +36,11 @@ ror_ic_inf_umbral = 1.0
 # validar_senales.py aplica el mismo criterio.
 min_casos_respaldo = 20
 
+[proyecto]
+# Enlaces que enseña la interfaz en el pie de la barra lateral (AGPL-3.0, 0.10).
+url_codigo = "https://github.com/SantosGGV/pharmasignal"
+url_licencia = "https://github.com/SantosGGV/pharmasignal/blob/main/LICENSE"
+
 [listados]
 # Filtro de señales triviales: el listado de consola de prr_ror.py y la casilla
 # «Ocultar señales triviales» de la interfaz exigen un mínimo en las otras

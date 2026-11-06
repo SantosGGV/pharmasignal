@@ -22,6 +22,12 @@ TIEMPO_MAX_S = 180
 # streamlit run añade al sys.path la carpeta del script y AppTest no; sin esto
 # no se encuentra consultas_explorador.
 sys.path.insert(0, str(APP.parent))
+sys.path.insert(0, str(RAIZ))
+
+from src import config  # noqa: E402  (necesita RAIZ en sys.path)
+
+# Texto del enlace al código que tiene que salir en el pie, por idioma (0.10).
+ENLACE_CODIGO = {"Español": "Código fuente", "English": "Source code"}
 
 # (nombre, zona, subapartado, idioma, búsqueda en Inicio)
 RECORRIDOS = [
@@ -51,6 +57,11 @@ def recorrer(zona, sub, idioma, busqueda):
         at.sidebar.radio[0].set_value(idioma).run()
     fallos = [f"excepción: {e.value}" for e in at.exception]
     fallos += [f"st.error: {e.value}" for e in at.error]
+    pie = " ".join(c.value for c in at.sidebar.caption)
+    for esperado in (ENLACE_CODIGO[idioma], config.PROYECTO_URL_CODIGO,
+                     config.PROYECTO_URL_LICENCIA):
+        if esperado not in pie:
+            fallos.append(f"pie de la barra lateral sin: {esperado}")
     return fallos
 
 

@@ -568,6 +568,16 @@ st.sidebar.caption(t("Una señal estadística es una hipótesis de trabajo, no u
                      "prueba de causalidad.",
                      "A statistical signal is a working hypothesis, not proof of "
                      "causality."))
+# Enlaces al código y a la licencia: la AGPL-3.0 pide ofrecer el código a quien
+# usa la interfaz por red. Se pintan aquí, antes de ejecutar la vista, para que
+# salgan aunque una vista falle.
+st.sidebar.caption(
+    t(f"[Código fuente]({config.PROYECTO_URL_CODIGO}) · "
+      f"[Licencia AGPL-3.0-only]({config.PROYECTO_URL_LICENCIA}) · "
+      "© 2026 Santos Gómez Gómez",
+      f"[Source code]({config.PROYECTO_URL_CODIGO}) · "
+      f"[License: AGPL-3.0-only]({config.PROYECTO_URL_LICENCIA}) · "
+      "© 2026 Santos Gómez Gómez"))
 
 
 # ZONA 1 — INICIO

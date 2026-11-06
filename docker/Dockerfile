@@ -32,6 +32,9 @@ COPY src/__init__.py src/config.py /app/src/
 # paleta por defecto, con el color primario en rojo.
 COPY .streamlit/ /app/.streamlit/
 
+# Licencia y avisos de terceros: quien recibe la imagen recibe tambien su texto.
+COPY LICENSE THIRD_PARTY_NOTICES.md /app/
+
 # Datos de demostracion. El archivo se genera con docker/preparar_demo.sh y
 # contiene las tablas de resultados necesarias para que la interfaz muestre
 # contenido sin ejecutar previamente el pipeline.

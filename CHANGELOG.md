@@ -32,6 +32,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Se p
 - `tests/test_repo_limpio.py`: comprueba que el `.gitignore` no repite líneas, que no hay `.pyc`, `__pycache__` ni `.venv` versionados, y que no hay rutas personales en lo versionado (0.9).
 - Pruebas `TABLAS_ORO` y `test_nadie_usa_la_carpeta_vieja` en `tests/test_capas.py`, que sustituyen a las de `migrar_capas` (0.9).
 - Decisión 0021 (historial sin `.venv`: reescribir con filter-repo; ejecutada el 03/11/2026) (0.9).
+- Licencia AGPL-3.0-only con el fichero `LICENSE` (texto oficial sin cambios) y sección corta en el README (0.10).
+- Decisión 0022 (licencia AGPL-3.0-only para el código, y paquetes CUDA de NVIDIA fuera de la licencia) (0.10).
+- `THIRD_PARTY_NOTICES.md` con las licencias de los paquetes de los bloqueos, y `scripts/deps/generar_avisos.py` que lo genera sin instalar nada (0.10).
+- Enlaces al código y a la licencia en el pie de la barra lateral de la interfaz, en español e inglés (0.10).
+- Sección `[proyecto]` en `config.toml` con las dos URL (0.10).
+- `LICENSE` y `THIRD_PARTY_NOTICES.md` en la imagen Docker (0.10).
+- Pruebas de licencia y avisos en `tests/test_licencia.py` (0.10).
 
 ### Cambiado
 - Los comandos del pipeline se lanzan con el lanzador, según CLAUDE.md (0.3).
