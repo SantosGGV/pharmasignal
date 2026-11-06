@@ -137,7 +137,9 @@ contingencia = contingencia.filter(col("a") >= MIN_CASOS)
 # Las celdas b o c podrían ser cero cuando un fármaco solo se asocia
 # a una reacción, o una reacción solo aparece con un fármaco. En esos
 # casos el ROR es indefinido. La corrección realizada consiste en sumar 0,5
-# a las cuatro celdas, lo que permite estabilizar la estimación sin alterar de
+# a las celdas a, b y c. La celda d se calcula después restando esas celdas ya
+# corregidas y sumando 0,5, así que queda en d real - 1 (fallo conocido, ver
+# docs/criterio.md). Esto permite estabilizar la estimación sin alterar de
 # una forma apreciable los resultados con conteos elevados.
 contingencia = contingencia \
     .withColumn("a", col("a").cast("double") + lit(0.5)) \

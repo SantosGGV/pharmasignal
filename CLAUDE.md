@@ -75,7 +75,7 @@
 
 ## Configuración
 - Umbrales y rutas en `config.toml`, leídos con `src/config.py`, que los expone con el prefijo de su sección (por ejemplo, `config.SENAL_PRR_MIN`). `PHARMASIGNAL_BASE` cambia la raíz de los datos (worktrees y Docker).
-- Secciones: `[rutas]` (raw, bronce, plata, oro, diccionarios, outputs y logs; `curated` y `migrar_capas.py` se retiraron en la 0.9); `[senal]` (prr_min 2.0, casos_min 3, chi2_min 4.0 y ror_ic_inf_umbral 1.0); `[interfaz]` (min_casos_respaldo 20); `[proyecto]` (url_codigo y url_licencia, los enlaces del pie de la interfaz); `[listados]` (trivial_min_c 100 y trivial_min_reportes_farmaco 200); `[geografia]` (min_casos_es 5, min_casos_global 20, min_casos_divergencia 30, min_global_divergencia 150, min_reportes_pais 5000, último trimestre de España 2025q2 y trimestres recodificados 2025q3 y 2025q4); `[explorador]` (min_reportes_farmaco 5000, min_casos_reaccion 1000 y min_reportes_pais 10000); `[lanzador]` (candado en `~/.cache/pharmasignal/pipeline.lock`, espacio_min_gb 25 en el disco con menos libre entre la base, la temporal y `discos_extra` (`/mnt/c`, el que se llena de verdad en WSL2), espera_terminar_s 30, las cinco `[[lanzador.fases]]` con sus scripts y claves de `[rutas]`, y `[[lanzador.fuera]]` con `traducir_terminos.py`).
+- Secciones: `[rutas]` (raw, bronce, plata, oro, diccionarios, outputs y logs; `curated` y `migrar_capas.py` se retiraron en la 0.9); `[senal]` (prr_min 2.0, casos_min 3, chi2_min 4.0 y ror_ic_inf_umbral 1.0; su significado, en `docs/criterio.md`); `[interfaz]` (min_casos_respaldo 20); `[proyecto]` (url_codigo y url_licencia, los enlaces del pie de la interfaz); `[listados]` (trivial_min_c 100 y trivial_min_reportes_farmaco 200); `[geografia]` (min_casos_es 5, min_casos_global 20, min_casos_divergencia 30, min_global_divergencia 150, min_reportes_pais 5000, último trimestre de España 2025q2 y trimestres recodificados 2025q3 y 2025q4); `[explorador]` (min_reportes_farmaco 5000, min_casos_reaccion 1000 y min_reportes_pais 10000); `[lanzador]` (candado en `~/.cache/pharmasignal/pipeline.lock`, espacio_min_gb 25 en el disco con menos libre entre la base, la temporal y `discos_extra` (`/mnt/c`, el que se llena de verdad en WSL2), espera_terminar_s 30, las cinco `[[lanzador.fases]]` con sus scripts y claves de `[rutas]`, y `[[lanzador.fuera]]` con `traducir_terminos.py`).
 - Si esta sección no coincide con lo que dejó la tarea 0.2, manda el código: corrígela aquí.
 
 ## Comandos
@@ -93,8 +93,8 @@
 - `src/curacion` (12): un `curar_*.py` por tabla, `curar_geografia.py`, `traducir_terminos.py`, `validar_curacion.py` y dos diagnósticos de geografía.
 - `src/analisis` (8): `prr_ror.py`, `analisis_geografico.py`, `analisis_temporal.py`, `analisis_explorador.py`, `analisis_explorador_cruces.py`, `familias.py`, `validar_senales.py` y `medir_escalabilidad.py`.
 - `src/app` (2): `streamlit_app.py` y `consultas_explorador.py`.
-- `src/config.py` y `config.toml` (0.2); `src/lanzador.py` (0.3); `scripts/deps/comprobar_bloqueo.py` y `scripts/comprobar_interfaz.py` (0.7); `LICENSE`, `THIRD_PARTY_NOTICES.md` y `scripts/deps/generar_avisos.py`, que regenera los avisos si cambia un bloqueo (0.10); `tests/` con `test_prr_ror.py`, `test_lanzador.py`, `test_capas.py`, `test_dependencias.py`, `test_repo_limpio.py` (0.9), `test_licencia.py` (0.10) y las pruebas de los hooks (`test_hooks_commit.py`, `test_hooks_agentes.py` y `test_hooks_sesion.py`).
-- `docs/bitacora`, `docs/decisiones` y `docs/img`; `CHANGELOG.md`.
+- `src/config.py` y `config.toml` (0.2); `src/lanzador.py` (0.3); `scripts/deps/comprobar_bloqueo.py` y `scripts/comprobar_interfaz.py` (0.7); `LICENSE`, `THIRD_PARTY_NOTICES.md` y `scripts/deps/generar_avisos.py`, que regenera los avisos si cambia un bloqueo (0.10); `tests/` con `test_prr_ror.py`, `test_lanzador.py`, `test_capas.py`, `test_dependencias.py`, `test_repo_limpio.py` (0.9), `test_licencia.py` (0.10), `test_criterio.py` (0.8) y las pruebas de los hooks (`test_hooks_commit.py`, `test_hooks_agentes.py` y `test_hooks_sesion.py`).
+- `docs/criterio.md` (0.8), `docs/bitacora`, `docs/decisiones` y `docs/img`; `CHANGELOG.md`.
 - `.claude/agents`, `.claude/skills/tarea` y `cerrar`, `.claude/hooks` y `.claude/settings.json`; `scripts/git` (hooks de pre-commit); `.pre-commit-config.yaml`.
 
 ## Datos
@@ -108,10 +108,11 @@
 - `outputs/`: logs (`outputs/logs/`, del lanzador) y mediciones. En Git solo están `escalabilidad.json` y `validacion_senales.csv`.
 
 ## Método (no se cambia sin una tarea explícita)
-- Criterio de señal: PRR ≥ 2, a ≥ 3 y χ² ≥ 4, con corrección de Haldane-Anscombe (+0,5 en las cuatro casillas, siempre).
-- ROR con su IC95; cuenta como señal si el límite inferior supera 1. PRR y ROR se calculan y se muestran siempre juntos.
-- Solo el fármaco sospechoso principal. La geografía usa `reporter_country` (0 % de nulos).
-- Desde 2025Q3, FAERS mete a España en el agregado europeo, así que el análisis nacional se limita a 2020Q1–2025Q2.
+- El criterio completo, con sus valores y los fallos conocidos, está en `docs/criterio.md`. `tests/test_criterio.py` lo compara con `config.toml`.
+- Criterio de señal (`es_senal`): PRR ≥ 2, a ≥ 3 y χ² ≥ 4; en España, a ≥ 5. Corrección: +0,5 en a, b y c; d queda en d real − 1 (fallo conocido).
+- ROR con su IC95: columna aparte (`ror_significativo`, límite inferior > 1), que no entra en `es_senal`. Nombres: «señales según criterio PRR» (`es_senal`), «señales confirmadas» (PRR y ROR a la vez; es estadístico, no una confirmación clínica) y «señales con respaldo» (`es_senal` y ≥ 20 casos). PRR y ROR se calculan juntos en la tabla global; España no calcula ROR y varias vistas de la interfaz enseñan el PRR sin el ROR (fallos conocidos).
+- Solo el fármaco sospechoso principal. Se deduplica por caso, con la mayor `caseversion`. La geografía usa `reporter_country` (0 % de nulos).
+- Desde 2025Q3, FAERS mete a España en el agregado europeo, así que el análisis geográfico de todos los países se limita a los casos cuya última versión cae en 2020Q1–2025Q2.
 - De fuera de EE. UU., la FDA solo exige los casos graves e inesperados: España en FAERS es un subconjunto filtrado (se mide en la 1.12).
 - Nunca un denominador común entre bases distintas (FAERS, EudraVigilance, VAERS, MAUDE): cada una se calcula por separado y, como mucho, se replica la señal.
 - Las tasas por exposición (2.10) son tasas de notificación, no incidencias.

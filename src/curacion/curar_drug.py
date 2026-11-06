@@ -10,10 +10,10 @@ existe en la tabla DEMO curada. Esto elimina automáticamente los fármacos de r
 que no superaron la deduplicación en DEMO.
 
 2. Filtro por rol del fármaco:
-"1" = Primary Suspect - fármaco principal sospechoso de causar la reacción.
-"2" = Seconday Suspect, "3" = Concomitant, "4" = Interacting.
+"PS" = Primary Suspect - fármaco principal sospechoso de causar la reacción.
+"SS" = Seconday Suspect, "C" = Concomitant, "I" = Interacting. Cualquier otro valor pasa a "UNK".
 Se conservan todos los roles pero se añade columna normalizada.
-El cálculo de PRR y ROR usa exclusivamente el rol "1"
+El cálculo de PRR y ROR usa exclusivamente el rol "PS"
 
 3. Normalización de drugname:
 El nombre del fármaco presenta alta variabilidad (nombres comerciales, genéricos, abreviaturas, errores

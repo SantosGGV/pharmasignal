@@ -410,10 +410,12 @@ n_reaccion_es = pares_es.groupBy("pt_norm") \
     .agg(countDistinct("primaryid").alias("n_reaccion"))
 
 # Reconstrucción de la tabla de contingencia 2x2 y cálculo del PRR local.
-# Se replica exactamente la misma metodología que aplicamos en prr_ror.py, es decir:
+# En la tabla 2x2 se replica la metodología que aplicamos en prr_ror.py, con dos diferencias: aquí se exige
+# el mínimo de casos de España y N es n_es, todos los reportes españoles, también los que no
+# forman ningún par fármaco-reacción (en prr_ror.py, N solo cuenta los reportes con pares). Es decir:
 #   b = n_farmaco - a  (fármaco sin la reacción)
 #   c = n_reaccion - a (reacción sin el fármaco)
-#   d = N - a - b - c  (ni fármaco ni reacción)
+#   d = N - a - b - c + 0,5, con a, b y c ya corregidas (ni fármaco ni reacción)
 # broadcast se usa en los marginales porque son tablas pequeñas en comparación al contero de pares,
 # evita un shuffle costoso al replicarlas en memoria.
 
@@ -438,7 +440,8 @@ prr_es = conteo_a_es \
         ((col("a") + col("b")) * (col("c") + col("d")) *
          (col("a") + col("c")) * (col("b") + col("d")))) \
     .withColumn("es_senal_es",
-        (col("prr_es") >= lit(2.0)) & (col("chi2_es") >= lit(4.0))) \
+        (col("prr_es") >= lit(config.SENAL_PRR_MIN)) &
+        (col("chi2_es") >= lit(config.SENAL_CHI2_MIN))) \
     .select("drugname_norm", "pt_norm",
             col("a").cast("int").alias("casos_es"),
             "prr_es", "chi2_es", "es_senal_es") \

@@ -13,6 +13,12 @@ y presenta los resultados en una interfaz para usuarios expertos y no expertos.
 
 Es una herramienta de apoyo al profesional y no sustituye en ningún caso el criterio clínico.
 
+## Criterio
+
+El criterio que afecta a las cifras (señal, ROR, España, deduplicación, ventana de
+trimestres, «Lectura fiable» y fallos conocidos) está en un único documento:
+[`docs/criterio.md`](docs/criterio.md).
+
 ## Fuente de datos
 
 FAERS (FDA Adverse Event Reporting System), 2020–2025, vía ficheros ASCII + OpenFDA API.
@@ -20,7 +26,7 @@ FAERS (FDA Adverse Event Reporting System), 2020–2025, vía ficheros ASCII + O
 ## Stack
 
 - Python 3.12 · PySpark 4.1.1 · Delta Lake 4.3.1 · Pandas 3.0.3
-- Streamlit 1.59.1 · Plotly 6.9.0 · Docker
+- Streamlit 1.66.1 · Plotly 6.9.0 · Docker
 - Entorno: WSL2 Ubuntu 24.04
 
 ## Estructura del proyecto
@@ -30,7 +36,10 @@ FAERS (FDA Adverse Event Reporting System), 2020–2025, vía ficheros ASCII + O
 ## Manual de usuario
 
 El manual completo de la herramienta está disponible en:
-[`docs/manual_usuario.pdf`](docs/Manual%20de%20Usuario%20-%20PharmaSignal%20-%20Santos_G.pdf)
+[`docs/Manual de Usuario - PharmaSignal - Santos_G.pdf`](docs/Manual%20de%20Usuario%20-%20PharmaSignal%20-%20Santos_G.pdf)
+
+El manual describe la versión `v1.0-tfb`; el criterio vigente está en
+[`docs/criterio.md`](docs/criterio.md).
 
 ## Ejecución
 
@@ -66,26 +75,21 @@ actualizada de los datos de demostración.
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# 2. Pipeline (necesario seguir este órden específico)
-python src/ingesta/ingesta_faers.py
-python src/curacion/curar_demo.py
-python src/curacion/curar_drug.py
-python src/curacion/curar_reac.py
-python src/curacion/curar_outc.py
-python src/curacion/curar_indi.py
-python src/curacion/curar_ther.py
-python src/curacion/curar_rpsr.py
-python src/curacion/curar_geografia.py
-python src/curacion/validar_curacion.py
-python src/analisis/prr_ror.py
-python src/analisis/analisis_geografico.py
-python src/analisis/analisis_temporal.py
-python src/analisis/analisis_explorador.py
-python src/analisis/analisis_explorador_cruces.py
+# 2. Pipeline, siempre con el lanzador (ejecuta las fases en su órden obligatorio)
+python src/lanzador.py --lista            # enseña el plan sin ejecutar nada
+python src/lanzador.py todo --confirmar   # reconstruye las cinco fases
+python src/lanzador.py --desde analisis --confirmar   # relanza desde una fase
+python src/lanzador.py --solo control     # ejecuta solo una fase
 
 # 3. Frontend
 streamlit run src/app/streamlit_app.py
 ```
+
+Las fases son `ingesta`, `curacion`, `validacion`, `analisis` y `control`. Sobre la
+base del repositorio, las que escriben tablas piden `--confirmar`; para reconstruir sin
+pisar los datos, usa otra base con `PHARMASIGNAL_BASE`. Los logs quedan en
+`outputs/logs/`. `src/curacion/traducir_terminos.py` queda fuera del lanzador: se
+ejecuta a mano con su propio entorno (`requirements-traduccion.txt`).
 
 ### Configuración
 
@@ -97,11 +101,14 @@ repositorio. Los scripts del pipeline y la interfaz lo leen a través de
 | Sección | Contenido |
 | --- | --- |
 | `[rutas]` | `data/raw`, las capas `data/bronce`, `data/plata` y `data/oro`, `data/diccionarios`, `outputs` y `outputs/logs`, relativas a la base |
-| `[senal]` | Criterio de señal (PRR ≥ 2, a ≥ 3, χ² ≥ 4) y umbral del IC95 inferior del ROR (> 1) |
-| `[interfaz]` | Respaldo mínimo (20 casos) para mostrar una señal confirmada |
-| `[listados]` | Filtro de señales triviales (c ≥ 100 y a + b ≥ 200) |
+| `[senal]` | Criterio de señal (PRR ≥ 2, a ≥ 3, χ² ≥ 4) y umbral del IC95 inferior del ROR (> 1), que se marca aparte y no entra en el criterio de señal |
+| `[interfaz]` | Respaldo mínimo (20 casos) de una señal con respaldo |
+| `[listados]` | Filtro de señales triviales (c ≥ 100 y a + b ≥ 200, sobre valores corregidos) |
 | `[geografia]` | Mínimos del análisis de España, mínimo de reportes por país y trimestres recodificados |
 | `[explorador]` | Mínimos de fármaco, reacción y país del constructor de gráficas |
+
+El significado y los valores de `[senal]`, `[interfaz]`, `[listados]`, `[geografia]` y
+`[explorador]` están en [`docs/criterio.md`](docs/criterio.md).
 
 La base de las rutas es la raíz del repositorio. Para usar otra, define la variable
 de entorno `PHARMASIGNAL_BASE`. Cambiar un umbral cambia los resultados: hay que
@@ -198,11 +205,12 @@ java -version
 
 #### Error de ruta inexistente en el almacén de datos
 
-Has lanzado una fase antes que la que genera su tabla de entrada. El orden del
-apartado de ejecución no es orientativo sino obligatorio.
+Has lanzado una fase antes que la que genera su tabla de entrada. El orden de las
+fases no es orientativo sino obligatorio.
 
 ```bash
 ls data/bronce/ data/plata/ data/oro/
+python src/lanzador.py --lista
 ```
 
 #### El script de preparación de datos falla con `bad interpreter: /bin/bash^M`
@@ -222,7 +230,7 @@ ejecutado desde ahí.
 ## Pruebas
 
 ```bash
-pytest tests/ -v
+pytest tests/ -q
 ```
 
 Las pruebas verifican las expresiones estadísticas del módulo de detección de señales
