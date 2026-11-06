@@ -598,11 +598,11 @@ def vista_inicio():
     if senales is not None:
         m1.metric(t("Combinaciones evaluadas", "Combinations evaluated"),
                   f"{len(senales):,}")
-        m2.metric(t("Señales confirmadas", "Confirmed signals"),
+        m2.metric(t("Señales según criterio PRR", "PRR-criterion signals"),
                   f"{int(senales['es_senal'].sum()):,}")   # sum() de un bool = cuántos True
     else:
         m1.metric(t("Combinaciones evaluadas", "Combinations evaluated"), "—")
-        m2.metric(t("Señales confirmadas", "Confirmed signals"), "—")
+        m2.metric(t("Señales según criterio PRR", "PRR-criterion signals"), "—")
     m3.metric(t("Países notificadores", "Reporting countries"),
               f"{perfil['reporter_country'].nunique():,}"
               if perfil is not None else "—")
@@ -684,7 +684,7 @@ def vista_inicio():
             # tantas veces como reacciones tenga.
             reportes = int(res.groupby("drugname_norm")
                            .apply(lambda g: (g["a"] + g["b"]).max()).sum())
-            confirmadas = res[res["es_senal"] & (res["casos"] >= MIN_CASOS_RESPALDO)]
+            con_respaldo = res[res["es_senal"] & (res["casos"] >= MIN_CASOS_RESPALDO)]
 
             st.markdown("##### " + t(f"Resultados para «{q}»",
                                      f"Results for «{q}»"))
@@ -693,8 +693,8 @@ def vista_inicio():
                       f"{reportes:,}")
             r2.metric(t("Efectos distintos", "Distinct effects"),
                       f"{res['pt_norm'].nunique():,}")
-            r3.metric(t("Señales confirmadas", "Confirmed signals"),
-                      f"{len(confirmadas):,}")
+            r3.metric(t("Señales con respaldo", "Supported signals"),
+                      f"{len(con_respaldo):,}")
 
             if grafias > 1:
                 st.caption(t(f"La búsqueda ha encontrado {grafias} formas de "
@@ -703,7 +703,7 @@ def vista_inicio():
                              f"The search found {grafias} spellings of this drug "
                              "in the database and groups them all."))
 
-            if not len(confirmadas):
+            if not len(con_respaldo):
                 st.info(t("Se han encontrado notificaciones, pero ninguna "
                           "combinación supera los criterios de señal con "
                           "respaldo suficiente.",
@@ -712,7 +712,7 @@ def vista_inicio():
             else:
                 # Agrupo por reacción sumando casos y quedándome con el PRR más
                 # alto, igual que hago en la vista Explorar.
-                agg = confirmadas.groupby("pt_norm").agg(
+                agg = con_respaldo.groupby("pt_norm").agg(
                     casos=("casos", "sum"), veces=("prr", "max")).reset_index()
                 top = agg.sort_values("veces", ascending=False).head(12)
                 top["pt_disp"] = tr_terms(top["pt_norm"])
@@ -769,7 +769,7 @@ def vista_explorar(fam_id):
     # Filtro las señales a los fármacos de esta familia.
     sen = senales[senales["drugname_norm"].isin(fam["drugs"])].copy()
     sen["casos"] = (sen["a"] - 0.5).round().astype(int)
-    # Me quedo solo con lo que es señal confirmada y con respaldo mínimo (>=20),
+    # Me quedo solo con lo que es señal según criterio PRR y con respaldo mínimo (>=20),
     # para no enseñar ruido en una vista pensada para usuarios no técnicos.
     sen = sen[sen["es_senal"] & (sen["casos"] >= MIN_CASOS_RESPALDO)]
 
@@ -844,7 +844,7 @@ def panel_senales():
         orden = c2.selectbox(t("Ordenar por", "Sort by"),
                              [t("Respaldo (nº de casos)", "Support (nº of cases)"),
                               t("Intensidad (PRR)", "Intensity (PRR)")])
-        solo = c3.checkbox(t("Solo señales confirmadas", "Confirmed signals only"),
+        solo = c3.checkbox(t("Solo señales según criterio PRR", "PRR-criterion signals only"),
                            value=True)
         c4, c5, c6 = st.columns(3)
         ocultar = c4.checkbox(t("Ocultar señales triviales",
@@ -872,7 +872,7 @@ def panel_senales():
     # Métricas que reaccionan a los filtros, se recalculan en cada rerun.
     m1, m2, m3, m4 = st.columns(4)
     m1.metric(t("Combinaciones", "Combinations"), f"{len(df):,}")
-    m2.metric(t("Señales confirmadas", "Confirmed signals"),
+    m2.metric(t("Señales según criterio PRR", "PRR-criterion signals"),
               f"{int(df['es_senal'].sum()):,}")
     m3.metric(t("PRR máximo", "Max PRR"),
               f"{df['prr'].max():,.0f}" if len(df) else "—")
@@ -1488,12 +1488,12 @@ def _dialogo_catalogo():
 
     st.caption(t(f"{len(cat):,} entidades consultables. Todas pueden buscarse. "
                  "La columna «lectura fiable» indica si la entidad alcanza el "
-                 "respaldo mínimo de notificaciones; las que no lo alcanzan se "
+                 "volumen mínimo de notificaciones; las que no lo alcanzan se "
                  "consultan igualmente, con una advertencia y limitadas a la "
                  "vista sobre el total del periodo.",
                  f"{len(cat):,} searchable entities. All can be queried. The "
                  "«reliable reading» column shows whether the entity meets the "
-                 "minimum support; those below it are still available, with a "
+                 "minimum volume; those below it are still available, with a "
                  "warning and limited to the whole-period view."))
 
     # El buscador propio filtra sobre el conjunto antes de entregarlo a la tabla.

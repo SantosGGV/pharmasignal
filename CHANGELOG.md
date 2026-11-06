@@ -39,6 +39,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Se p
 - Sección `[proyecto]` en `config.toml` con las dos URL (0.10).
 - `LICENSE` y `THIRD_PARTY_NOTICES.md` en la imagen Docker (0.10).
 - Pruebas de licencia y avisos en `tests/test_licencia.py` (0.10).
+- `docs/criterio.md`: documento único del criterio que afecta a las cifras, con la tabla de valores, los datos, las fórmulas, los nombres de la interfaz y los fallos conocidos (0.8).
+- `tests/test_criterio.py`: 16 pruebas que comparan la tabla de valores de `docs/criterio.md` con `config.toml` (0.8).
+- Decisión 0023 (criterio en un único documento, con prueba contra `config.toml`) (0.8).
 
 ### Cambiado
 - Los comandos del pipeline se lanzan con el lanzador, según CLAUDE.md (0.3).
@@ -59,6 +62,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Se p
 - CLAUDE.md actualizado tras el visto bueno de Santos (0.9).
 - Historial de Git reescrito sin `.venv` (0.9, ADR 0021): cambian todos los hashes de commit; las etiquetas conservan nombre y árbol.
 - `tests/test_repo_limpio.py` ampliada: las líneas repetidas cuentan igual con y sin barra final, y el patrón de ruta personal ya no cuenta la carpeta del ejecutor de GitHub Actions. Son 7 casos parametrizados (0.9).
+- Los umbrales de `es_senal_es` en `src/analisis/analisis_geografico.py` se leen de `config.toml`, en vez de estar escritos a mano. Los valores no cambian (0.8).
+- Nombres en la interfaz, en español e inglés: «Señales según criterio PRR» / «PRR-criterion signals» para `es_senal`, y «Señales con respaldo» / «Supported signals» para `es_senal` con al menos 20 casos. «Señales confirmadas» queda solo para PRR y ROR a la vez (0.8).
+- README: enlace al criterio, nota de que el manual en PDF describe `v1.0-tfb`, y versiones y comandos actuales (Streamlit 1.66.1, pipeline con el lanzador y `pytest tests/ -q`) (0.8).
+- CLAUDE.md (sección Método) y `.claude/agents/metodo.md` dicen lo que hace el código y enlazan a `docs/criterio.md` (0.8).
 
 ### Eliminado
 - `src/migrar_capas.py`, el traslado de un solo uso de la 0.11 (0.9).
@@ -66,6 +73,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Se p
 
 ### Corregido
 - `.gitignore` sin las líneas repetidas `.venv/`, `__pycache__/` y `*.pyc` (0.9).
+- Comentarios que describían mal el código, solo texto y sin cambio de comportamiento: empate en la deduplicación de `curar_demo.py`, roles del sospechoso en `curar_drug.py`, N de España y d en `analisis_geografico.py`, d en `prr_ror.py` y `tests/test_prr_ror.py`, y secciones `[senal]`, `[interfaz]` y `[listados]` y `min_casos_global` en `config.toml` (0.8).
 
 ### Seguridad
 - anyio 4.14.2, GitPython 3.1.60 y urllib3 2.8.0, que corrigen 10 vulnerabilidades conocidas (0.12).

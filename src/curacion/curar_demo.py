@@ -46,8 +46,9 @@ print(f"\nRegistros iniciales DEMO: {total_inicial:,}")
 # FAERS puede contener varias versiones del mismo reporte (caseid).
 # Nos quedamos solo con la versión más reciente de cada caso.
 # Si hay un empate en caseversion (el mismo reporte aparece en dos trimestres)
-# Desempatamos por primaryid quedándonos con el mayor que corresponde
-# a la carga más reciente.
+# el primaryid también coincide, porque es caseid + caseversion. El orden por
+# primaryid no desempata y la fila que queda es arbitraria, no la de la carga
+# más reciente (fallo conocido, ver docs/criterio.md).
 ventana_dedup = Window.partitionBy("caseid").orderBy(
     col("caseversion_int").desc(),
     col("primaryid").cast("long").desc()

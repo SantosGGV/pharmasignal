@@ -4,6 +4,7 @@ Una entrada por sesión de trabajo, la más reciente arriba. Plantilla: [PLANTIL
 
 | Fecha | Tarea | Resumen | Entrada |
 | --- | --- | --- | --- |
+| 2026-11-06 | 0.8 | Criterio en un único documento `docs/criterio.md` con 16 pruebas contra `config.toml`, nombres de la interfaz corregidos y fallos conocidos con destino; 298 pruebas en verde (antes 282), cifras sin cambios y ADR 0023 | [2026-11-06_0.8-criterio.md](2026-11-06_0.8-criterio.md) |
 | 2026-11-06 | 0.10 | Licencia AGPL-3.0-only con `LICENSE`, avisos de terceros generados sin instalar nada y enlaces de licencia en el pie de la interfaz; 282 pruebas en verde (antes 237) y ADR 0022 | [2026-11-06_0.10-licencia.md](2026-11-06_0.10-licencia.md) |
 | 2026-11-03 | 0.9 (cierre) | Historial reescrito sin `.venv`: pack de 645 MB a 2,3 MiB y gitleaks de 2 hallazgos a 0, con el mismo árbol en cada etiqueta; 237 pruebas en verde (antes 229) y ADR 0021 ejecutado | [2026-11-03_0.9-reescritura.md](2026-11-03_0.9-reescritura.md) |
 | 2026-11-02 | 0.9 (parte 1) | Inventario del historial, `.gitignore` sin líneas repetidas, prueba de repo limpio y retirada de `curated` y `migrar_capas`; 229 pruebas al final (antes 247) y ADR 0021 para reescribir el historial, paso 8 pendiente | [2026-11-02_0.9-repo-limpio.md](2026-11-02_0.9-repo-limpio.md) |

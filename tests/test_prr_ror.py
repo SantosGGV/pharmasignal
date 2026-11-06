@@ -72,7 +72,8 @@ def calcular(spark, a, n_farmaco, n_reaccion, N):
 
     # Reconstrucción de la tabla 2x2 y corrección de Haldane-Anscombe.
     # El orden importa: primero se derivan b y c de los marginales y después
-    # se suma 0,5 a las cuatro celdas.
+    # se suma 0,5 a a, b y c; d se calcula con ellas ya corregidas y queda en
+    # d real - 1 (fallo conocido, ver docs/criterio.md).
     df = (df
           .withColumn("b", col("n_farmaco") - col("a"))
           .withColumn("c", col("n_reaccion") - col("a"))
@@ -187,7 +188,7 @@ def test_prr_proximo_a_uno_sin_asociacion(spark):
 def test_ror_sobre_tabla_conocida(spark):
     """El ROR coincide con el valor calculado a mano.
 
-    ROR = (a*d) / (b*c), con las cuatro celdas ya corregidas.
+    ROR = (a*d) / (b*c), con las celdas tal como quedan tras la corrección.
     """
     r = calcular(spark, a=40, n_farmaco=100, n_reaccion=500, N=10000)
     esperado = (40.5 * r["d"]) / (60.5 * 460.5)

@@ -23,7 +23,8 @@ logs = "outputs/logs"
 
 [senal]
 # Criterio de señal de Evans et al. (2001): PRR >= 2, a >= 3 y chi2 >= 4.
-# Usado en prr_ror.py y medir_escalabilidad.py.
+# Usado en prr_ror.py; prr_min y chi2_min, también en analisis_geografico.py;
+# casos_min, también en medir_escalabilidad.py.
 prr_min = 2.0
 casos_min = 3
 chi2_min = 4.0
@@ -32,8 +33,9 @@ chi2_min = 4.0
 ror_ic_inf_umbral = 1.0
 
 [interfaz]
-# Respaldo mínimo, en casos, para mostrar una señal confirmada en la interfaz.
-# validar_senales.py aplica el mismo criterio.
+# Respaldo mínimo, en casos, para que una señal según criterio PRR se muestre
+# como «señal con respaldo» en la interfaz. validar_senales.py aplica el mismo
+# criterio.
 min_casos_respaldo = 20
 
 [proyecto]
@@ -44,14 +46,16 @@ url_licencia = "https://github.com/SantosGGV/pharmasignal/blob/main/LICENSE"
 [listados]
 # Filtro de señales triviales: el listado de consola de prr_ror.py y la casilla
 # «Ocultar señales triviales» de la interfaz exigen un mínimo en las otras
-# casillas de la tabla 2x2 (c, y a+b = reportes del fármaco).
+# casillas de la tabla 2x2 (c, y a+b = reportes del fármaco). Se comparan con
+# los valores corregidos: a+b lleva +1, así que 200 equivale a 199 reportes
+# reales (fallo conocido, ver docs/criterio.md).
 trivial_min_c = 100
 trivial_min_reportes_farmaco = 200
 
 [geografia]
 # Usados en analisis_geografico.py, curar_geografia.py y la interfaz.
 min_casos_es = 5                  # mínimo de casos en España para evaluar una señal
-min_casos_global = 20             # mínimo de casos globales para comparar con España
+min_casos_global = 20             # mínimo de casos globales de los listados de consola de señales amplificadas (x5 en atenuadas); no filtra la tabla guardada
 min_casos_divergencia = 30        # mínimo en España para el análisis de divergencia
 min_global_divergencia = 150      # mínimo global para el análisis de divergencia
 min_reportes_pais = 5000          # mínimo de notificaciones de un país para los rankings
